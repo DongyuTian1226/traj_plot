@@ -1,78 +1,72 @@
-import os
+from typing import Union
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-'''画出xy平面上的轨迹数据散点'''
-
-
-FIGSIZE = (4.5, 6)
-# plt字体设置为times new roman
-plt.rcParams['font.sans-serif'] = ['Times New Roman']
-plt.rcParams['axes.unicode_minus'] = False
-# # plt横纵坐标标题字体大小
-plt.rcParams['axes.labelsize'] = 14
-# 全局字体默认大小
-plt.rcParams['font.size'] = 13
-# legend字体大小
-plt.rcParams['legend.fontsize'] = 12
+from research_plt import ResearchPlt
 
 
-def trajXYScatter(csvPath: str,
-                  xIndex: int, yIndex: int, laneIndex: int,
-                  savePath: str = None):
-    '''function trajXYScatter
+class TrajXyPlot(ResearchPlt):
+    '''轨迹点在xy平面上绘制, 继承自ResearchPlt类'''
+    def __init__(
+            self,
+            path: str,
+            x_idx: Union[int, str],
+            y_idx: Union[int, str],
+            lane_idx: Union[int, str],
+            save_path: str = None,
+            **kwagrgs):
+        '''继承自ResearchPlt类, 画轨迹点在xy平面上的散点图
+        
+        input
 
-    input
-    -----
-    csvPath: str, 轨迹数据路径
-    xIndex: int, x坐标索引(csv文件中的列索引)
-    yIndex: int, y坐标索引(csv文件中的列索引)
-    laneIndex: int, 车道索引(csv文件中的列索引)
-    savePath: str, 保存路径
+        '''
+        super().__init__(**kwagrgs)
+        self.path = path
+        self.save_path = save_path
+        self.df = pd.read_csv(path) if path.endswith('.csv') else pd.read_excel(path)
+        self.x_idx = x_idx if isinstance(x_idx, str) else self.df.columns[x_idx]
+        self.y_idx = y_idx if isinstance(y_idx, str) else self.df.columns[y_idx]
+        self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
 
-    画出xy平面上的轨迹数据散点。
-    '''
-    # 指定数据和列
-    data = pd.read_csv(csvPath)
-    # data = data[data['lane'] > 0]       # for field data
-    colX, colY = data.columns[xIndex], data.columns[yIndex]
-    colLane = data.columns[laneIndex]
+    def run(
+            self,
+            scatter_size: float = 1,
+            scatter_alpha: float = 0.5,
+            origin: bool = True,
+            origin_size: float = 100,
+            origin_color: str = 'red',
+            origin_marker: str = 'o',
+            ):
+        '''运行画图'''
+        plt.figure()
+        if origin:
+            plt.scatter([0], [0], s=origin_size, c=origin_color, marker=origin_marker)
+        for lane, lane_data in self.df.groupby(self.lane_idx):
+            # 加alpha会变糊
+            plt.scatter(lane_data[self.x_idx], lane_data[self.y_idx],
+                        label='lane'+str(lane), s=scatter_size, alpha=scatter_alpha)
 
-    # 画图
-    plt.figure(figsize=FIGSIZE)
-    plt.tight_layout()
-    plt.scatter([0], [0], s=100, c="red", marker="o")  # 标注雷达原点
-    # plt.scatter(data[data.columns[xIndex]], data[data.columns[yIndex]], s=1)
-    for group, dfLane in data.groupby(colLane):
-        # 加alpha会变糊
-        plt.scatter(dfLane[colX], dfLane[colY],
-                    label='lane'+str(group), s=1, alpha=0.5)
+        # 添加元素
+        plt.xlabel(self.x_idx)
+        plt.ylabel(self.y_idx)
+        self.show_legend_sorted(title=self.lane_idx)
+        save_path = self.save_path or self.path.split('.')[0] + '.png'
+        plt.savefig(save_path)
+        plt.close()
 
-    # 添加元素
-    if savePath is None:
-        savePath = csvPath.split('.')[0] + '.png'
-    saveFileName = os.path.basename(savePath).split('.')[0]
-    plt.xlabel("x/m")
-    plt.ylabel("y/m")
-    # plt.title(saveFileName)
-    plt.legend(handletextpad=0.05, labelspacing=0.1, loc="best")
-    # plt.legend(loc="best")
-    plt.savefig(savePath, dpi=300)
-    # plt.show()
+
+def main_raoyue():
+    '''绕越高速雷达数据平面图'''
+    # field data
+    x_idx = 3
+    y_idx = 4
+    lane_idx = 2
+
+    # # 画单个文件
+    path = r"D:\myscripts\spill-detection\data\extractedData\2024-3-27-17_byDevice\K78+760_1.csv"
+    txyp = TrajXyPlot(path=path, x_idx=x_idx, y_idx=y_idx, lane_idx=lane_idx)
+    txyp.run()
 
 
 if __name__ == '__main__':
-    # 最初的result
-    # xIndex = 1
-    # yIndex = 2
-    # laneIndex = 13
-    #
-    # field data
-    xIndex = 3
-    yIndex = 4
-    laneIndex = 2
-
-    # # 画单个文件
-    csvPath = r"D:\myscripts\spill-detection\data\extractedData\2024-3-27-17_byDevice\K78+760_1.csv"
-    trajXYScatter(csvPath, xIndex, yIndex, laneIndex)
+    main_raoyue()

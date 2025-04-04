@@ -1,9 +1,10 @@
 import os
-import pandas as pd
-import matplotlib.cm as cm
-from tqdm import tqdm
-from matplotlib import pyplot as plt
 from typing import Union
+import pandas as pd
+from tqdm import tqdm
+from matplotlib import cm
+from matplotlib import pyplot as plt
+
 
 from research_plt import ResearchPlt
 
@@ -21,7 +22,7 @@ class TimeSpacePlotter(ResearchPlt):
             lane_idx: Union[int, str],
             car_idx: Union[int, str],
             time_idx: Union[int, str],
-            distance_idx: Union[int, str],
+            dist_idx: Union[int, str],
             v_idx: Union[int, str],
             max_time: int = 1e10,
             v_trans: bool = False,
@@ -38,12 +39,13 @@ class TimeSpacePlotter(ResearchPlt):
         lane_idx: Union[int, str], 车道号列索引或列名
         car_idx: Union[int, str], 车辆ID列索引或列名
         time_idx: Union[int, str], 帧号列索引或列名
-        distance_idx: Union[int, str], 车辆位置列索引或列名
+        dist_idx: Union[int, str], 车辆位置列索引或列名
         v_idx: Union[int, str], 车辆速度列索引或列名
         max_time: int, 最大画图的帧数/秒数, 默认值为尽可能大的数字, 即画图范围不限
         v_trans: bool, 是否转换速度单位, 默认False, 即速度单位为m/s, 设为True则转换为km/h
         colormap: cm, 画图参数，颜色映射, 默认为逆序的彩虹色rainbow_r
         scatter_size: int, 画图参数，轨迹的散点大小, 默认为1
+        **kwargs: ResearchPlt的初始化参数, 参见ResearchPlt
         '''
         super().__init__(**kwargs)
         self.path = path
@@ -57,17 +59,19 @@ class TimeSpacePlotter(ResearchPlt):
         self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.data.columns[lane_idx]
         self.car_idx = car_idx if isinstance(car_idx, str) else self.data.columns[car_idx]
         self.time_idx = time_idx if isinstance(time_idx, str) else self.data.columns[time_idx]
-        self.distance_idx = distance_idx if isinstance(distance_idx, str) else self.data.columns[distance_idx]
+        self.dist_idx = dist_idx if isinstance(dist_idx, str) else self.data.columns[dist_idx]
         self.v_idx = v_idx if isinstance(v_idx, str) else self.data.columns[v_idx]
         self.data = self.data.sort_values(by=[self.lane_idx, self.car_idx, self.time_idx],
                                           axis=0, ascending=[True, True, True])
         self.data = self.data.reset_index(drop=True)
 
-    def run(self, 
+    def run(self,
             x_min: int = None, x_max: int = None, x_gap: int = None,
             y_min: int = None, y_max: int = None, y_gap: int = None,
-            x_grid: list = None, x_grid_color: str = 'grey', x_grid_style: str = '--', x_grid_width: float = 0.5,
-            y_grid: list = None, y_grid_color: str = 'black', y_grid_style: str = '-', y_grid_width: float = 0.5,
+            x_grid: list = None, x_grid_color: str = 'grey',
+            x_grid_style: str = '--', x_grid_width: float = 0.5,
+            y_grid: list = None, y_grid_color: str = 'black',
+            y_grid_style: str = '-', y_grid_width: float = 0.5,
             ):
         '''根据初始化的参数画出时空轨迹图
         
@@ -88,23 +92,25 @@ class TimeSpacePlotter(ResearchPlt):
         data[self.v_idx] = data[self.v_idx] * 3.6 if self.v_trans else data[self.v_idx]
         # 画图
         print("begin drawing!")
-        for lane, laneGroup in tqdm(data.groupby(data[self.lane_idx])):
+        for lane, lane_data in tqdm(data.groupby(data[self.lane_idx])):
             plt.figure()
-            for car_id, car_traj in laneGroup.groupby(laneGroup[self.car_idx]):
-                car_traj[self.v_idx] = car_traj[self.v_idx].abs()  # 速度取绝对值，以免速度方向与指定方向相反而带有负号
-                plt.scatter(car_traj[self.time_idx], car_traj[self.distance_idx],
+            for _, car_traj in lane_data.groupby(lane_data[self.car_idx]):
+                car_traj[self.v_idx] = car_traj[self.v_idx].abs()  # 取abs，以免v方向与指定方向相反而为负
+                plt.scatter(car_traj[self.time_idx], car_traj[self.dist_idx],
                             c=list(car_traj[self.v_idx]), cmap=self.colormap, s=self.scatter_size)
             plt.title(f"lane {lane} trajectories")
             plt.colorbar()
             plt.xlabel(self.time_idx)
-            plt.ylabel(self.distance_idx)
+            plt.ylabel(self.dist_idx)
             self.xy_limit_with_gap(
                 x_min=x_min, x_max=x_max, x_gap=x_gap,
                 y_min=y_min, y_max=y_max, y_gap=y_gap,
                 )
             self.specified_grid(
-                x_grid=x_grid, x_grid_color=x_grid_color, x_grid_style=x_grid_style, x_grid_width=x_grid_width,
-                y_grid=y_grid, y_grid_color=y_grid_color, y_grid_style=y_grid_style, y_grid_width=y_grid_width,
+                x_grid=x_grid, x_grid_color=x_grid_color,
+                x_grid_style=x_grid_style, x_grid_width=x_grid_width,
+                y_grid=y_grid, y_grid_color=y_grid_color,
+                y_grid_style=y_grid_style, y_grid_width=y_grid_width,
                 )
             plt.savefig(os.path.join(self.output_dir, f"lane_{lane}.jpg"))
             plt.close()
@@ -112,21 +118,22 @@ class TimeSpacePlotter(ResearchPlt):
 
 
 def main_example():
+    '''样例数据画图'''
     path = 'data/tra_sample.xlsx'
-    output_dir = path.strip('.xlsx')
+    output_dir = path.removesuffix('.xlsx')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     # 数据表列索引
     lane_idx = 1
     car_idx = 0
-    FrameIndex = 2
-    distance_idx = 3
-    v_idx = 7
+    time_idx = 2
+    dist_idx = 3
+    v_idx = 6
     # 运行
     tsp = TimeSpacePlotter(
         path=path, output_dir=output_dir,
-        lane_idx=lane_idx, car_idx=car_idx, time_idx=FrameIndex,
-        distance_idx=distance_idx, v_idx=v_idx,
+        lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx,
+        dist_idx=dist_idx, v_idx=v_idx,
         v_trans=True, scatter_size=2,
         figsize=(20,8),
         )
@@ -134,25 +141,26 @@ def main_example():
 
 
 def main_sumo_model0():
+    '''sumo仿真model0数据画图'''
     path = r'D:\myscripts\pro\output\test0_post.csv'
     # 创建输出文件夹
     output_manager_dir = path.strip('.csv')
     if not os.path.exists(output_manager_dir):
         os.makedirs(output_manager_dir)
-    lane_change_output_dir = os.path.join(output_manager_dir, f'trajectory')
+    lane_change_output_dir = os.path.join(output_manager_dir, 'trajectory')
     if not os.path.exists(lane_change_output_dir):
         os.makedirs(lane_change_output_dir)
     # 数据表列索引
     lane_idx = 2
     car_idx = 0
     time_idx = 1
-    distance_idx = 8
+    dist_idx = 8
     v_idx = 9
     # 运行
     tsp = TimeSpacePlotter(
         path=path, output_dir=lane_change_output_dir,
         lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx,
-        distance_idx=distance_idx, v_idx=v_idx,
+        dist_idx=dist_idx, v_idx=v_idx,
         v_trans=True, scatter_size=2,
         figsize=(20,8),
         )
@@ -164,5 +172,5 @@ def main_sumo_model0():
 
 
 if __name__ == '__main__':
-    # main_example()
-    main_sumo_model0()
+    main_example()
+    # main_sumo_model0()

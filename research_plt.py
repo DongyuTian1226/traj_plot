@@ -1,6 +1,3 @@
-'''更符合科研作图的plt画图, 使用时可基于该基础类进行继承'''
-
-
 import matplotlib.pyplot as plt
 
 
@@ -48,7 +45,7 @@ class ResearchPlt:
         handles, labels = plt.gca().get_legend_handles_labels()
         sorted_labels = sorted(labels)
         sorted_handles = [handles[labels.index(label)] for label in sorted_labels]
-        legend = plt.legend(sorted_handles, sorted_labels, title=title)
+        _ = plt.legend(sorted_handles, sorted_labels, title=title)
 
     def xy_limit_with_gap(
             self,
@@ -75,8 +72,10 @@ class ResearchPlt:
 
     def specified_grid(
             self,
-            x_grid: list = None, x_grid_color: str = 'grey', x_grid_style: str = '--', x_grid_width: float = 0.5,
-            y_grid: list = None, y_grid_color: str = 'black', y_grid_style: str = '-', y_grid_width: float = 0.5,
+            x_grid: list = None, x_grid_color: str = 'grey',
+            x_grid_style: str = '--', x_grid_width: float = 0.5,
+            y_grid: list = None, y_grid_color: str = 'black',
+            y_grid_style: str = '-', y_grid_width: float = 0.5,
             ):
         '''
         设置指定的网格线, 颜色, 样式, 宽度
@@ -89,13 +88,15 @@ class ResearchPlt:
         x_grid_width, y_grid_width: float, 网格线宽度
         '''
         for vertical_line in x_grid or []:
-            plt.axvline(x=vertical_line, color=x_grid_color, linestyle=x_grid_style, linewidth=x_grid_width)
+            plt.axvline(x=vertical_line, color=x_grid_color,
+                        linestyle=x_grid_style, linewidth=x_grid_width)
         for horizontal_line in y_grid or []:
-            plt.axhline(y=horizontal_line, color=y_grid_color, linestyle=y_grid_style, linewidth=y_grid_width)
+            plt.axhline(y=horizontal_line, color=y_grid_color,
+                        linestyle=y_grid_style, linewidth=y_grid_width)
 
 
 class ExamplePloter(ResearchPlt):
     '''示例, 基于ResearchPlt类进行继承'''
-    def __init__(self, csv_path: str, **kwargs):
+    def __init__(self, path: str, **kwargs):
         super().__init__(**kwargs)
-        self.csv_path = csv_path
+        self.path = path
