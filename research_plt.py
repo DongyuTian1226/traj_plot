@@ -63,10 +63,10 @@ class ResearchPlt:
         y_min, y_max: float, y轴范围
         y_gap: float, y轴范围前后间隔
         '''
-        if x_min and x_max:
+        if x_min is not None and x_max is not None:
             x_gap = x_gap or 0
             plt.xlim(x_min - x_gap, x_max + x_gap)
-        if y_min and y_max:
+        if y_min is not None and y_max is not None:
             y_gap = y_gap or 0
             plt.ylim(y_min - y_gap, y_max + y_gap)
 
@@ -93,6 +93,15 @@ class ResearchPlt:
         for horizontal_line in y_grid or []:
             plt.axhline(y=horizontal_line, color=y_grid_color,
                         linestyle=y_grid_style, linewidth=y_grid_width)
+
+    def colorbar_vehicle_speed(self, v_min: int = 0, v_max: int = 120, v_step: int = 20,
+                               cmap: str = 'jet_r'):
+        '''
+        绘制车辆速度的colorbar
+        '''
+        plt.clim(v_min, v_max)
+        cbar = plt.colorbar(cmap=cmap)
+        cbar.set_ticks(range(v_min, v_max + v_step, v_step))
 
 
 class ExamplePloter(ResearchPlt):

@@ -14,13 +14,19 @@ class TrajXyPlot(ResearchPlt):
             y_idx: Union[int, str],
             lane_idx: Union[int, str],
             save_path: str = None,
-            **kwagrgs):
+            **kwargs):
         '''继承自ResearchPlt类, 画轨迹点在xy平面上的散点图
         
         input
+        -----
+        path: str, 轨迹文件路径
+        x_idx: Union[int, str], 横坐标所在列的索引或列名
+        y_idx: Union[int, str], 纵坐标所在列的索引或列名
+        lane_idx: Union[int, str], 车道所在列的索引或列名
+        save_path: str, 保存图片的路径, 如果为None则保存到path所在文件夹下
 
         '''
-        super().__init__(**kwagrgs)
+        super().__init__(**kwargs)
         self.path = path
         self.save_path = save_path
         self.df = pd.read_csv(path) if path.endswith('.csv') else pd.read_excel(path)
