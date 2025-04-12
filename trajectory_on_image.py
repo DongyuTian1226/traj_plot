@@ -47,8 +47,8 @@ class TrajOnImagePlotter(ResearchPlt):
     def plot_scatter(
             self,
             scatter_color: str = 'red',
-            scatter_size: float = 3,
-            scatter_alpha: float = 0.8,
+            markersize: float = 3,
+            marker_alpha: float = 0.8,
             mask_color: np.ndarray = None,
             mask_alpha: float = 0.5,
             ):
@@ -57,8 +57,8 @@ class TrajOnImagePlotter(ResearchPlt):
         input
         -----
         scatter_color: str, 散点颜色
-        scatter_size: float, 散点大小
-        scatter_alpha: float, 散点透明度
+        markersize: float, 散点大小
+        marker_alpha: float, 散点透明度
         mask_color: np.ndarray, 蒙版颜色,格式为(R, G, B, A), 不设置则不显示蒙版
         mask_alpha: float, 蒙版透明度
         '''
@@ -72,7 +72,7 @@ class TrajOnImagePlotter(ResearchPlt):
 
         # 在图像上绘制散点图
         plt.scatter(self.df[self.x_idx], self.df[self.y_idx],
-                    c=scatter_color, s=scatter_size, alpha=scatter_alpha)
+                    c=scatter_color, s=markersize, alpha=marker_alpha)
 
         # 显示结果
         plt.axis('off')  # 关闭坐标轴
@@ -125,8 +125,8 @@ def main_hksts_debris_paper():
     time_idx = 0
     car_idx = 2
     scatter_color = 'yellow'
-    scatter_size = 0.2
-    scatter_alpha = 0.3
+    markersize = 0.2
+    marker_alpha = 0.3
     line_color = (139/255, 69/255, 19/255, 1)       # white
     line_width = 1
     line_alpha = 0
@@ -143,7 +143,7 @@ def main_hksts_debris_paper():
         path = path_list[i]
         img_path = img_path_list[i]
         toip = TrajOnImagePlotter(path, img_path, x_idx, y_idx, time_idx, car_idx)
-        toip.plot_scatter(scatter_color, scatter_size, scatter_alpha)
+        toip.plot_scatter(scatter_color, markersize, marker_alpha)
         toip.plot_line(line_color, line_width, line_alpha)
 
 if __name__ == '__main__':

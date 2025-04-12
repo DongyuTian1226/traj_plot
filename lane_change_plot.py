@@ -48,10 +48,8 @@ class LaneChangePlot(ResearchPlt):
         self.y_idx = y_idx if isinstance(y_idx, str) else self.df.columns[y_idx]
         self.df = self.df.sort_values(by=self.time_idx, ascending=True)
         # 生成存储文件夹
-        output_manager_dir = path.strip('.csv')
-        if not os.path.exists(output_manager_dir):
-            os.makedirs(output_manager_dir)
-        lane_change_output_dir = os.path.join(output_manager_dir, f'lane_change_{lanemode}')
+        output_dir = os.path.dirname(self.path)
+        lane_change_output_dir = os.path.join(output_dir, f'lane_change_{lanemode}')
         if not os.path.exists(lane_change_output_dir):
             os.makedirs(lane_change_output_dir)
         self.lane_change_output_dir = lane_change_output_dir
@@ -136,7 +134,7 @@ class LaneChangePlot(ResearchPlt):
         # 全局plt配置
         self.xy_limit_with_gap(x_min=x_min, x_max=x_max, x_gap=x_gap)
         # 网格线
-        self.specified_grid(x_grid=x_grid, x_grid_color=x_grid_color,
+        self.xy_grid(x_grid=x_grid, x_grid_color=x_grid_color,
                             x_grid_style=x_grid_style, x_grid_width=x_grid_width,
                             y_grid=y_grid, y_grid_color=y_grid_color,
                             y_grid_style=y_grid_style, y_grid_width=y_grid_width)
@@ -149,14 +147,14 @@ class LaneChangePlot(ResearchPlt):
 def main():
     '''研究生毕设sumo仿真结果画图'''
     # 数据表参数
-    car_idx = 'VehicleID'
-    time_idx = 'Time(s)'
-    lane_idx = 'LaneID'
+    car_idx = 'vehicleID'
+    time_idx = 'time(s)'
+    lane_idx = 'laneID'
     x_idx = 'x(m)'
     y_idx = 'y(m)'
     dist_idx = 'distance(m)'
     # 画图参数
-    fig_size = (12, 4)
+    figsize = (12, 4)
     x_min = -1000
     x_max = 1500
     y_min = -20
@@ -167,14 +165,14 @@ def main():
     x_grid = [-1000, 0, 500, 1500]
     y_grid = list(np.arange(0, -20, -3.75))
 
-    path = r'D:\myscripts\pro\output\test0_post.csv'
+    path = r'D:\myscripts\pro\output\model0\trajectory.csv'
     lcp = LaneChangePlot(
         path,
         lane_idx=lane_idx, car_idx=car_idx,
         time_idx=time_idx, dist_idx=dist_idx,
         x_idx=x_idx, y_idx=y_idx,
         lanemode='legend',
-        figsize=fig_size,
+        figsize=figsize,
         )
     lcp.run(
         x_min=x_min, x_max=x_max,

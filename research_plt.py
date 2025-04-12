@@ -35,7 +35,7 @@ class ResearchPlt:
         plt.rcParams['legend.loc'] = legend_loc                         # legend位置
         plt.rcParams['legend.handletextpad'] = legend_handletextpad     # legend图例文字间距
 
-    def show_legend_sorted(self, title: str):
+    def show_legend_sorted(self, title: str = None):
         '''
         处理legend的显示顺序, 使其按照顺序排列
         input
@@ -70,7 +70,7 @@ class ResearchPlt:
             y_gap = y_gap or 0
             plt.ylim(y_min - y_gap, y_max + y_gap)
 
-    def specified_grid(
+    def xy_grid(
             self,
             x_grid: list = None, x_grid_color: str = 'grey',
             x_grid_style: str = '--', x_grid_width: float = 0.5,
@@ -95,17 +95,40 @@ class ResearchPlt:
                         linestyle=y_grid_style, linewidth=y_grid_width)
 
     def colorbar_vehicle_speed(self, v_min: int = 0, v_max: int = 120, v_step: int = 20,
-                               cmap: str = 'jet_r'):
+                               cmap: str = 'jet_r', bar_label: str = 'speed (km/h)'):
         '''
         绘制车辆速度的colorbar
         '''
         plt.clim(v_min, v_max)
         cbar = plt.colorbar(cmap=cmap)
         cbar.set_ticks(range(v_min, v_max + v_step, v_step))
+        cbar.set_label(bar_label)
 
 
-class ExamplePloter(ResearchPlt):
-    '''示例, 基于ResearchPlt类进行继承'''
-    def __init__(self, path: str, **kwargs):
+class ExamplePlotter(ResearchPlt):
+    '''示例, 基于ResearchPlt类进行继承。该class作为新class的代码模板
+
+    设计规则
+    -------
+    将数据读取和画图的代码块分离, 避免代码和运行存在耦合关系, 代码清晰高效。
+    初始化: 输入数据文件配置, 数据列配置, 执行数据读取和预处理。
+    run: 输入画图的超参数和plt配置, 执行基本的科研风格绘图。
+
+    优点
+    -----
+    1. 代码清晰, 易于理解, 易于维护
+    2. 画图的参数和数据读取的参数分离, 避免代码和运行存在耦合关系
+    3. 绘图风格基于科研风格, 易于传播
+    4. 显示定义plt常用画图参数, 易于使用
+
+    缺点
+    -----
+    1. 显示定义plt常用画图参数过多, 源码较长, 易忘记配置
+    2. 自定义的程度不如直接使用plt画图灵活
+    '''
+    def __init__(
+        self,
+        data_path: str,
+        **kwargs):
         super().__init__(**kwargs)
-        self.path = path
+        self.path = data_path
