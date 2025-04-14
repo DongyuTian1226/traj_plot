@@ -60,8 +60,8 @@ class LaneChangePlot(ResearchPlt):
         self.color_map = {lane: cm.tab10(i) for i, lane in enumerate(unique_lanes)}
 
     def run(self,
-            x_min: int = None, x_max: int = None, x_gap: int = None,
-            y_min: int = None, y_max: int = None, y_gap: int = None, y_min_ramp: int = None,
+            x_min: int = None, x_max: int = None, x_gap: int = 0,
+            y_min: int = None, y_max: int = None, y_gap: int = 0, y_min_ramp: int = None,
             lane_min: int = None, lane_max: int = None,
             x_grid: list = None, x_grid_color: str = 'grey',
             x_grid_style: str = '--', x_grid_width: float = 0.5,
@@ -85,8 +85,8 @@ class LaneChangePlot(ResearchPlt):
                 )
 
     def _plot(self, car_df: pd.DataFrame,
-              x_min: int = None, x_max: int = None, x_gap: int = None,
-              y_min: int = None, y_max: int = None, y_gap: int = None, y_min_ramp: int = None,
+              x_min: int = None, x_max: int = None, x_gap: int = 0,
+              y_min: int = None, y_max: int = None, y_gap: int = 0, y_min_ramp: int = None,
               lane_min: int = None, lane_max: int = None,
               x_grid: list = None, x_grid_color: str = 'grey',
               x_grid_style: str = '--', x_grid_width: float = 0.5,
@@ -108,6 +108,7 @@ class LaneChangePlot(ResearchPlt):
         x_grid_color, y_grid_color: str, 网格线颜色
         x_grid_style, y_grid_style: str, 网格线样式
         x_grid_width, y_grid_width: float, 网格线宽度
+        # TODO 根据example更新代码
         '''
         plt.figure()
         # 横轴为distance, 纵轴为laneID

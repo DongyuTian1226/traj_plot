@@ -71,7 +71,7 @@ class ExamplePlotter(ResearchPlt):
         self.path = data_path
         self.save_dir = save_dir
         self.max_time = max_time
-        self.ids = ids
+        self.ids = [ids] if isinstance(ids, int) else ids
         self.v_trans = v_trans
         self.v_abs = v_abs
         # 读取数据
@@ -86,7 +86,6 @@ class ExamplePlotter(ResearchPlt):
         # 数据预处理
         self.df = self.df[self.df[self.time_idx] <= self.max_time]
         if self.ids is not None:
-            self.ids = [self.ids] if isinstance(self.ids, int) else self.ids
             self.df = self.df[self.df[self.car_idx].isin(self.ids)]
         self.df[self.v_idx] = self.df[self.v_idx] * (3.6 if self.v_trans else 1)
         self.df[self.v_idx] = self.df[self.v_idx].abs() if self.v_abs else self.df[self.v_idx]

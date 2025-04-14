@@ -12,6 +12,7 @@ class TimeSpeedPlotter(ResearchPlt):
     '''时空轨迹图, 继承自ResearchPlt类
 
     画出指定车辆的时间-速度图像. 横坐标为t, 纵坐标为v
+    # TODO 根据example更新代码
     '''
     def __init__(
             self,
@@ -52,8 +53,8 @@ class TimeSpeedPlotter(ResearchPlt):
         self.data = self.data.reset_index(drop=True)
 
     def run(self,
-            x_min: int = None, x_max: int = None, x_gap: int = None, x_offset: int = 0,
-            y_min: int = None, y_max: int = None, y_gap: int = None, y_offset: int = 0,
+            x_min: int = None, x_max: int = None, x_gap: int = 0, x_offset: int = 0,
+            y_min: int = None, y_max: int = None, y_gap: int = 0, y_offset: int = 0,
             x_grid: list = None, x_grid_color: str = 'grey', x_grid_style: str = '--', x_grid_width: float = 0.5,
             y_grid: list = None, y_grid_color: str = 'black', y_grid_style: str = '-', y_grid_width: float = 0.5,
             line_width: float = 1,

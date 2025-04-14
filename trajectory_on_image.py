@@ -11,6 +11,7 @@ class TrajOnImagePlotter(ResearchPlt):
     '''轨迹点在图像上绘制, 继承自ResearchPlt类
 
     在一张图像上, 将轨迹点绘制成散点图或线条图
+    # TODO 根据example更新代码
     '''
     def __init__(
             self,
