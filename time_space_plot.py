@@ -116,7 +116,7 @@ class TimeSpacePlotter(ResearchPlt):
                             c=speeds, cmap=self.cmap, norm=norm_func,
                             s=self.markersize)
             plt.title(f"lane {lane} trajectories")
-            self.colorbar_vehicle_speed(
+            self.show_colorbar_speed(
                 cmap=self.cmap, v_min=colorbar_min, v_max=colorbar_max, v_step=colorbar_step)
             plt.xlabel(self.time_idx)
             plt.ylabel(self.dist_idx)
@@ -176,7 +176,7 @@ def main_sumo_model0():
     tsp = TimeSpacePlotter(
         path=path, save_dir=save_dir,
         lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx,
-        dist_idx=dist_idx, v_idx=v_idx, ids=list(range(100)),       # 
+        dist_idx=dist_idx, v_idx=v_idx,
         v_trans=True, markersize=1,
         figsize=(20,8),
         )
@@ -213,7 +213,7 @@ def test_sumo_model0_single_car():
         tsp.run(
             x_min=0, x_max=2200,
             y_min=0, y_max=2500, y_gap=50, y_offset=1000,
-            y_grid=[1000, 1500], 
+            y_grid=[1000, 1500],
         )
 
 if __name__ == '__main__':

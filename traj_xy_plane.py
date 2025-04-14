@@ -228,9 +228,9 @@ class TrajXyPlot(ResearchPlt):
                     c=speeds, cmap=cmap, norm=norm_func,
                     s=markersize, marker=marker, alpha=marker_alpha, zorder=10)
             plt_xy_func()
-            self.colorbar_vehicle_speed(
+            self.show_colorbar_speed(
                 v_min=colorbar_min, v_max=colorbar_max, v_step=colorbar_step,
-                cmap=cmap, bar_label = 'speed (km/h)' if self.v_trans else 'speed (m/s)')
+                cmap=cmap, label = 'speed (km/h)' if self.v_trans else 'speed (m/s)')
             save_path = os.path.join(self.save_dir, f'car_{car_id}_v_legend.png')
             plt.savefig(save_path)
             plt.close()
@@ -285,9 +285,9 @@ class TrajXyPlot(ResearchPlt):
                     car_traj[self.x_idx], car_traj[self.y_idx],
                     c=speeds, cmap=cmap, norm=norm_func,
                     s=markersize, marker=marker, alpha=marker_alpha, zorder=10)
-        self.colorbar_vehicle_speed(
+        self.show_colorbar_speed(
             v_min=colorbar_min, v_max=colorbar_max, v_step=colorbar_step,
-            cmap=cmap, bar_label ='speed (km/h)' if self.v_trans else'speed (m/s)')
+            cmap=cmap, label ='speed (km/h)' if self.v_trans else'speed (m/s)')
 
 
 def main_raoyue():

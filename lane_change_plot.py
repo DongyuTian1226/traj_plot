@@ -48,11 +48,11 @@ class LaneChangePlot(ResearchPlt):
         self.y_idx = y_idx if isinstance(y_idx, str) else self.df.columns[y_idx]
         self.df = self.df.sort_values(by=self.time_idx, ascending=True)
         # 生成存储文件夹
-        output_dir = os.path.dirname(self.path)
-        lane_change_output_dir = os.path.join(output_dir, f'lane_change_{lanemode}')
-        if not os.path.exists(lane_change_output_dir):
-            os.makedirs(lane_change_output_dir)
-        self.lane_change_output_dir = lane_change_output_dir
+        save_dir = os.path.dirname(self.path)
+        lane_change_save_dir = os.path.join(save_dir, f'lane_change_{lanemode}')
+        if not os.path.exists(lane_change_save_dir):
+            os.makedirs(lane_change_save_dir)
+        self.lane_change_save_dir = lane_change_save_dir
         # 车道颜色映射
         # 获取所有唯一的 laneID
         unique_lanes = self.df[self.lane_idx].unique()
@@ -140,7 +140,7 @@ class LaneChangePlot(ResearchPlt):
                             y_grid_style=y_grid_style, y_grid_width=y_grid_width)
         car_id = car_df[self.car_idx].iloc[0]
         plt.title(f'Vehicle {car_id} Lane Change')
-        plt.savefig(os.path.join(self.lane_change_output_dir, f'{car_id}.png'))
+        plt.savefig(os.path.join(self.lane_change_save_dir, f'{car_id}.png'))
         plt.close()
 
 

@@ -16,7 +16,7 @@ class TimeSpeedPlotter(ResearchPlt):
     def __init__(
             self,
             path: str,
-            output_dir: str,
+            save_dir: str,
             car_idx: Union[int, str],
             time_idx: Union[int, str],
             v_idx: Union[int, str],
@@ -29,7 +29,7 @@ class TimeSpeedPlotter(ResearchPlt):
         input
         -----
         path: str, 仿真数据csv文件路径
-        output_dir: str, 保存图片的文件夹
+        save_dir: str, 保存图片的文件夹
         car_idx: Union[int, str], 车辆ID列索引或列名
         time_idx: Union[int, str], 帧号列索引或列名
         v_idx: Union[int, str], 车辆速度列索引或列名
@@ -40,7 +40,7 @@ class TimeSpeedPlotter(ResearchPlt):
         '''
         super().__init__(**kwargs)
         self.path = path
-        self.output_dir = output_dir
+        self.save_dir = save_dir
         self.v_trans = v_trans
         # 读取数据
         self.data = pd.read_csv(path) if path.endswith('.csv') else pd.read_excel(path)
@@ -109,9 +109,9 @@ class TimeSpeedPlotter(ResearchPlt):
                     c=speeds, cmap=cmap, norm=norm_func,
                     s=markersize, marker=marker, zorder=10)
             # 添加颜色条
-            self.colorbar_vehicle_speed(
+            self.show_colorbar_speed(
                 cmap=cmap, v_min=colorbar_min, v_max=colorbar_max, v_step=colorbar_step,
-                bar_label='speed (km/h)' if self.v_trans else 'speed (m/s)')
+                label='speed (km/h)' if self.v_trans else 'speed (m/s)')
 
             plt.title(f"car_{car_id} time-speed figure")
             plt.xlabel(self.time_idx)
@@ -124,7 +124,7 @@ class TimeSpeedPlotter(ResearchPlt):
                 x_grid=x_grid, x_grid_color=x_grid_color, x_grid_style=x_grid_style, x_grid_width=x_grid_width,
                 y_grid=y_grid, y_grid_color=y_grid_color, y_grid_style=y_grid_style, y_grid_width=y_grid_width,
                 )
-            plt.savefig(os.path.join(self.output_dir, f"car_{car_id}.jpg"))
+            plt.savefig(os.path.join(self.save_dir, f"car_{car_id}.jpg"))
             plt.close()
         print("finish drawing!")
 
@@ -133,16 +133,16 @@ def main_sumo_model0():
     '''sumo仿真model0数据画图'''
     path = r'D:\myscripts\pro\output\model0\trajectory.csv'
     # 创建输出文件夹
-    output_dir = os.path.join(os.path.dirname(path), 'time_speed')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    save_dir = os.path.join(os.path.dirname(path), 'time_speed')
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     # 数据表列索引
     car_idx = 'vehicleID'
     time_idx = 'time(s)'
     v_idx = 'speed(m/s)'
     # 运行
     tsp = TimeSpeedPlotter(
-        path=path, output_dir=output_dir,
+        path=path, save_dir=save_dir,
         car_idx=car_idx, time_idx=time_idx, v_idx=v_idx,
         v_trans=True,
         )
