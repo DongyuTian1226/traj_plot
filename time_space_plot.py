@@ -215,7 +215,39 @@ def test_sumo_model0_single_car():
             y_grid=[1000, 1500],
         )
 
+
+def main_sumo_model1():
+    '''sumo仿真model1数据画图'''
+    path = r'D:\myscripts\pro\output\model1\trajectory.csv'
+    # 创建输出文件夹
+    save_dir = os.path.join(os.path.dirname(path), 'trajectory')
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    # 数据表列索引
+    lane_idx = 'laneID'
+    car_idx = 'vehicleID'
+    time_idx = 'time(s)'
+    # dist_idx = 'odeometer(m)'
+    dist_idx= 'x(m)'
+    v_idx = 'speed(m/s)'
+    # 运行
+    tsp = TimeSpacePlotter(
+        path=path, save_dir=save_dir,
+        lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
+        v_trans=True, v_abs=True,
+        figsize=(20,8),
+        )
+    tsp.run(
+        markersize=0.5, marker_alpha=1,
+        x_min=0, x_max=1400,
+        y_min=0, y_max=1200, y_gap=0,
+        y_offset=500,
+        y_grid=[500, 700],
+        )
+
+
 if __name__ == '__main__':
     # main_example()
-    main_sumo_model0()
+    # main_sumo_model0()
+    main_sumo_model1()
     # test_sumo_model0_single_car()

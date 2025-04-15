@@ -1,5 +1,5 @@
 # pylint: disable=unused-argument, unused-variable
-
+import os
 from typing import Union
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -69,11 +69,15 @@ class ExamplePlotter(ResearchPlt):
         '''
         super().__init__(**kwargs)
         self.path = data_path
-        self.save_dir = save_dir
         self.max_time = max_time
         self.ids = [ids] if isinstance(ids, int) else ids
         self.v_trans = v_trans
         self.v_abs = v_abs
+        # 创建输出文件夹
+        save_dir = save_dir or os.path.join(os.path.dirname(data_path), 'example')     # NOTE 修改输出文件夹名称
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        self.save_dir = save_dir
         # 读取数据
         self.df = pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path)
         self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
@@ -98,10 +102,11 @@ class ExamplePlotter(ResearchPlt):
             y_min: int = None, y_max: int = None, y_gap: int = 0, y_offset: int = 0,
             x_grid: list = None, x_grid_color: str = 'grey', x_grid_style: str = '--', x_grid_width: float = 0.5,
             y_grid: list = None, y_grid_color: str = 'black', y_grid_style: str = '-', y_grid_width: float = 0.5,
-            if_line: bool = False, line_width: float = 1, line_style: str = '-',    # NOTE: 调整默认if_line和if_scatter
-            if_scatter:bool = False, marker: str = 'o', markersize: float = 1, marker_alpha: float = 0.5,
+            if_line: bool = False, line_width: float = 1, line_style: str = '-', line_alpha: float = 1,
+            if_scatter:bool = False, marker: str = 'o', markersize: float = 1, marker_alpha: float = 1,
             cmap = cm.jet_r, colorbar_min: int = 0, colorbar_max: int = 120, colorbar_step: int = 20,
             # NOTE: 在此添加画图相关参数
+            # NOTE: 调整默认if_line和if_scatter
             ):
         '''
         input

@@ -13,13 +13,16 @@ from research_plt import ResearchPlt
 class LaneChangePlot(ResearchPlt):
     '''画出车道变化情况, 适配字符串laneID和整数ID'''
     def __init__(self,
-                 path: str,
-                 lane_idx: Union[int, str],
-                 car_idx: Union[int, str],
+                 data_path: str,
                  time_idx: Union[int, str],
+                 car_idx: Union[int, str],
+                 lane_idx: Union[int, str],
                  dist_idx: Union[int, str],
                  x_idx: Union[int, str],
                  y_idx: Union[int, str],
+                 save_dir: str = None,
+                 max_time: int = 1e10,
+                 ids: Union[int, str, list] = None,
                  lanemode: str = 'legend',
                  **kwargs):
         '''预存储文件存储信息和画图参数
@@ -27,47 +30,51 @@ class LaneChangePlot(ResearchPlt):
         input
         -----
         path: str, 仿真数据csv文件路径
-        lane_idx: Union[int, str], 车道索引
-        car_idx: Union[int, str], 车辆索引
         time_idx: Union[int, str], 时间索引
+        car_idx: Union[int, str], 车辆索引
+        lane_idx: Union[int, str], 车道索引
         dist_idx: Union[int, str], 行驶距离索引
         x_idx: Union[int, str], 二维坐标系下x坐标索引
         y_idx: Union[int, str], 二维坐标系下y坐标索引
+        save_dir: str, 保存路径
         lanemode: str, 可选y, legend
         **kwargs: ResearchPlt的初始化参数, 参见ResearchPlt
         '''
         super().__init__(**kwargs)
-        self.path = path
+        self.path = data_path
+        # 生成存储文件夹
+        save_dir = save_dir or os.path.join(os.path.dirname(data_path), f'lane_change_{lanemode}')
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        self.save_dir = save_dir
+        self.max_time = max_time
+        self.ids = ids
         self.lanemode = lanemode
-        self.df = pd.read_csv(path) if path.endswith('.csv') else pd.read_excel(path)
+        # 读取数据
+        self.df = pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path)
         self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
         self.car_idx = car_idx if isinstance(car_idx, str) else self.df.columns[car_idx]
         self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
         self.dist_idx = dist_idx if isinstance(dist_idx, str) else self.df.columns[dist_idx]
         self.x_idx = x_idx if isinstance(x_idx, str) else self.df.columns[x_idx]
         self.y_idx = y_idx if isinstance(y_idx, str) else self.df.columns[y_idx]
-        self.df = self.df.sort_values(by=self.time_idx, ascending=True)
-        # 生成存储文件夹
-        save_dir = os.path.dirname(self.path)
-        lane_change_save_dir = os.path.join(save_dir, f'lane_change_{lanemode}')
-        if not os.path.exists(lane_change_save_dir):
-            os.makedirs(lane_change_save_dir)
-        self.lane_change_save_dir = lane_change_save_dir
-        # 车道颜色映射
-        # 获取所有唯一的 laneID
-        unique_lanes = self.df[self.lane_idx].unique()
-        # 创建颜色映射
-        self.color_map = {lane: cm.tab10(i) for i, lane in enumerate(unique_lanes)}
+        # 数据预处理
+        self.df = self.df[self.df[self.time_idx] <= self.max_time]
+        if self.ids is not None:
+            self.df = self.df[self.df[self.car_idx].isin(self.ids)]
+        self.df = self.df.sort_values(by=[self.time_idx, self.car_idx], axis=0, ascending=[True, True])
+        self.df = self.df.reset_index(drop=True)
+
+        self._init_lane_color_map()
 
     def run(self,
             x_min: int = None, x_max: int = None, x_gap: int = 0,
             y_min: int = None, y_max: int = None, y_gap: int = 0, y_min_ramp: int = None,
             lane_min: int = None, lane_max: int = None,
-            x_grid: list = None, x_grid_color: str = 'grey',
-            x_grid_style: str = '--', x_grid_width: float = 0.5,
-            y_grid: list = None, y_grid_color: str = 'black',
-            y_grid_style: str = '-', y_grid_width: float = 0.5,
-            **kwargs,
+            x_grid: list = None, x_grid_color: str = 'grey', x_grid_style: str = '--', x_grid_width: float = 0.5,
+            y_grid: list = None, y_grid_color: str = 'black', y_grid_style: str = '-', y_grid_width: float = 0.5,
+            line_width: float = 1, line_style: str = '-',
+            marker: str = 'o', markersize: float = 1, marker_alpha: float = 0.5,
             ):
         '''画出每辆车的换道情况, 以便确认换道的正确性和换道位置
         '''
@@ -77,21 +84,20 @@ class LaneChangePlot(ResearchPlt):
                 x_min=x_min, x_max=x_max, x_gap=x_gap,
                 y_min=y_min, y_max=y_max, y_gap=y_gap, y_min_ramp=y_min_ramp,
                 lane_min=lane_min, lane_max=lane_max,
-                x_grid=x_grid, x_grid_color=x_grid_color,
-                x_grid_style=x_grid_style, x_grid_width=x_grid_width,
-                y_grid=y_grid, y_grid_color=y_grid_color,
-                y_grid_style=y_grid_style, y_grid_width=y_grid_width,
-                **kwargs,
+                x_grid=x_grid, x_grid_color=x_grid_color, x_grid_style=x_grid_style, x_grid_width=x_grid_width,
+                y_grid=y_grid, y_grid_color=y_grid_color, y_grid_style=y_grid_style, y_grid_width=y_grid_width,
+                line_width=line_width, line_style=line_style,
+                marker=marker, markersize=markersize, marker_alpha=marker_alpha,
                 )
 
     def _plot(self, car_df: pd.DataFrame,
               x_min: int = None, x_max: int = None, x_gap: int = 0,
               y_min: int = None, y_max: int = None, y_gap: int = 0, y_min_ramp: int = None,
               lane_min: int = None, lane_max: int = None,
-              x_grid: list = None, x_grid_color: str = 'grey',
-              x_grid_style: str = '--', x_grid_width: float = 0.5,
-              y_grid: list = None, y_grid_color: str = 'black',
-              y_grid_style: str = '-', y_grid_width: float = 0.5,
+              x_grid: list = None, x_grid_color: str = 'grey', x_grid_style: str = '--', x_grid_width: float = 0.5,
+              y_grid: list = None, y_grid_color: str = 'black', y_grid_style: str = '-', y_grid_width: float = 0.5,
+              line_width: float = 1, line_style: str = '-',
+              marker: str = 'o', markersize: float = 1, marker_alpha: float = 0.5,
               ):
         '''画出单车的换道情况, 外部调用推荐run()
 
@@ -103,17 +109,20 @@ class LaneChangePlot(ResearchPlt):
         y_min, y_max: int, 纵坐标最小值, 纵坐标最大值
         y_gap: int, 纵坐标前后的空隔
         y_min_ramp: int, 纵坐标最小值(匝道场景)
-        lane_min, lane_max: int, 车道最小值, 车道最大值
+        lane_min, lane_max: int, 车道最小值, 车道最大值, 当纵坐标为lane数值考虑设置
         x_grid, y_grid: list, x或y对应垂线的网格线位置
         x_grid_color, y_grid_color: str, 网格线颜色
         x_grid_style, y_grid_style: str, 网格线样式
         x_grid_width, y_grid_width: float, 网格线宽度
-        # TODO 根据example更新代码
+        line_width, line_style: float, str, 线的宽度和样式
+        marker, markersize, marker_alpha: str, float, float, 点的样式、大小和透明度
         '''
         plt.figure()
         # 横轴为distance, 纵轴为laneID
         if self.lanemode == 'y':
-            plt.plot(car_df[self.dist_idx], car_df[self.lane_idx], label=self.lane_idx)
+            plt.plot(
+                car_df[self.dist_idx], car_df[self.lane_idx], label=self.lane_idx,
+                line_width=line_width, line_style=line_style)
             plt.xlabel(self.dist_idx)
             plt.ylabel(self.lane_idx)
             if lane_min and lane_max:
@@ -122,7 +131,8 @@ class LaneChangePlot(ResearchPlt):
         elif self.lanemode == 'legend':
             for lane, lane_data in car_df.groupby(self.lane_idx):
                 plt.scatter(lane_data[self.x_idx], lane_data[self.y_idx],
-                            label=lane, color=self.color_map[lane], s=2)
+                            label=lane, color=self.lane_color_map[lane],
+                            marker=marker, s=markersize, alpha=marker_alpha)
             plt.xlabel(self.x_idx)
             plt.ylabel(self.y_idx)
             self.show_legend_sorted(self.lane_idx)
@@ -141,9 +151,15 @@ class LaneChangePlot(ResearchPlt):
                             y_grid_style=y_grid_style, y_grid_width=y_grid_width)
         car_id = car_df[self.car_idx].iloc[0]
         plt.title(f'Vehicle {car_id} Lane Change')
-        plt.savefig(os.path.join(self.lane_change_save_dir, f'{car_id}.png'))
+        plt.savefig(os.path.join(self.save_dir, f'{car_id}.png'))
         plt.close()
 
+    def _init_lane_color_map(self, cmap = cm.tab10):
+        '''初始化车道颜色映射。
+        如不需要对车道指定颜色, 可关闭。
+        '''
+        unique_lanes = self.df[self.lane_idx].unique()
+        self.lane_color_map = {lane: cmap(i) for i, lane in enumerate(unique_lanes)}
 
 def main():
     '''研究生毕设sumo仿真结果画图'''

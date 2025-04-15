@@ -10,21 +10,23 @@ from research_plt import ResearchPlt
 
 class TrajXyPlot(ResearchPlt):
     '''轨迹点在xy平面上绘制, 继承自ResearchPlt类
-    
+
     # TODO 根据example更新代码
     '''
     def __init__(
             self,
             path: str,
-            x_idx: Union[int, str],
-            y_idx: Union[int, str],
             time_idx: Union[int, str],
             car_idx: Union[int, str],
+            x_idx: Union[int, str],
+            y_idx: Union[int, str],
             lane_idx: Union[int, str] = None,
             v_idx: Union[int, str] = None,
-            v_trans: bool = False,
             save_dir: str = None,
-            ids: Union[int, list] = None,
+            max_time: int = 1e10,
+            ids: Union[int, str, list] = None,
+            v_trans: bool = False,
+            v_abs: bool = False,
             legend_mode: str = 'lane',
             separate_plot: bool = False,
             **kwargs):
@@ -33,21 +35,21 @@ class TrajXyPlot(ResearchPlt):
         input
         -----
         path: str, 轨迹文件路径
+        time_idx: Union[int, str], 时间所在列的索引或列名
+        car_idx: Union[int, str], 车辆id所在列的索引或列名
         x_idx: Union[int, str], 横坐标所在列的索引或列名
         y_idx: Union[int, str], 纵坐标所在列的索引或列名
-        time_idx: Union[int, str], 时间所在列的索引或列名
         lane_idx: Union[int, str], 车道所在列的索引或列名
-        car_idx: Union[int, str], 车辆id所在列的索引或列名
         v_idx: Union[int, str], 速度所在列的索引或列名
-        v_trans: bool, 是否将速度转换为km/h
         save_dir: str, 保存图片的文件夹, 如果为None则保存到path所在文件夹
-        legend_mode: str, 图例模式, 可选'lane', 'v'
+        max_time: int, 最大时间, 默认为1e10
         ids: Union[int, list], 要画的车辆id
+        v_trans: bool, 是否将速度转换为km/h
+        v_abs: bool, 是否取速度的绝对值
+        legend_mode: str, 图例模式, 可选'lane', 'v'
         separate_plot: bool, 是否分开画每个id的轨迹, 默认为False
         '''
         super().__init__(**kwargs)
-        if ids is not None and car_idx is None:
-            raise ValueError('If you want to draw specific ids, you must specify car_idx.')
         if legend_mode == 'lane' and lane_idx is None:
             raise ValueError('If you want to draw lane, you must specify lane_idx.')
         if legend_mode == 'v' and v_idx is None:
@@ -55,31 +57,36 @@ class TrajXyPlot(ResearchPlt):
         if legend_mode not in ['lane', 'v']:
             raise ValueError(f'legend_mode must be `lane` or `v`, you set {legend_mode}')
         self.path = path
+        self.max_time = max_time
+        self.ids = ids
+        self.v_abs = v_abs
+        self.v_trans = v_trans
+        self.separate_plot = separate_plot
+        self.legend_mode = legend_mode
+        # 创建输出文件夹
         self.save_dir = save_dir or path.split('.')[0] + f'_traj_xy_{legend_mode}'
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-        self.v_trans = v_trans
+        # 读取数据
         self.df = pd.read_csv(path) if path.endswith('.csv') else pd.read_excel(path)
+        self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
         self.car_idx = car_idx if isinstance(car_idx, str) else self.df.columns[car_idx]
         self.x_idx = x_idx if isinstance(x_idx, str) else self.df.columns[x_idx]
         self.y_idx = y_idx if isinstance(y_idx, str) else self.df.columns[y_idx]
-        self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
-        self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
-        self.v_idx = v_idx if isinstance(v_idx, str) else self.df.columns[v_idx]
-        self.separate_plot = separate_plot
-        self.legend_mode = legend_mode
-        # 预处理
-        if ids is not None:
-            self.ids = [ids] if isinstance(ids, int) else ids
-            self.df = self.df[self.df[self.car_idx].isin(self.ids)]                 # 筛选指定车辆
-        self.df.sort_values(by=[self.time_idx, self.car_idx], inplace=True)         # 按时间和id排序
-        self.df[self.v_idx] = self.df[self.v_idx] * (3.6 if self.v_trans else 1)    # 转换速度单位
-        # 车道颜色映射
         if lane_idx is not None:
-            # 获取所有唯一的 laneID
-            unique_lanes = self.df[self.lane_idx].unique()
-            # 创建颜色映射
-            self.lane_color_map = {lane: cm.tab10(i) for i, lane in enumerate(unique_lanes)}
+            self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
+        if v_idx is not None:
+            self.v_idx = v_idx if isinstance(v_idx, str) else self.df.columns[v_idx]
+        # 数据预处理
+        self.df = self.df[self.df[self.time_idx] <= self.max_time]
+        if self.ids is not None:
+            self.df = self.df[self.df[self.car_idx].isin(self.ids)]
+        self.df[self.v_idx] = self.df[self.v_idx] * (3.6 if self.v_trans else 1)
+        self.df[self.v_idx] = self.df[self.v_idx].abs() if self.v_abs else self.df[self.v_idx]
+        self.df = self.df.sort_values(by=[self.time_idx, self.car_idx], axis=0, ascending=[True, True])
+        self.df = self.df.reset_index(drop=True)
+        # 车道颜色映射
+        self._init_lane_color_map()
 
     def run(
             self,
@@ -121,12 +128,12 @@ class TrajXyPlot(ResearchPlt):
             '''将ResearchPlt的基本xy框架函数, 打包成一个函数'''
             plt.xlabel(self.x_idx)
             plt.ylabel(self.y_idx)
-            self.xy_limit_with_gap(
-                        x_min=x_min, x_max=x_max, x_gap=x_gap,
-                        y_min=y_min, y_max=y_max, y_gap=y_gap)
-            self.xy_grid(
+            self.one_call_xy_settings(
+                x_min=x_min, x_max=x_max, x_gap=x_gap,
+                y_min=y_min, y_max=y_max, y_gap=y_gap,
                 x_grid=x_grid, x_grid_color=x_grid_color, x_grid_style=x_grid_style, x_grid_width=x_grid_width,
-                y_grid=y_grid, y_grid_color=y_grid_color, y_grid_style=y_grid_style, y_grid_width=y_grid_width)
+                y_grid=y_grid, y_grid_color=y_grid_color, y_grid_style=y_grid_style, y_grid_width=y_grid_width,
+            )
         # 画图函数包装2
         def plot_origin_func():
             '''如开启则画原点'''
@@ -291,6 +298,13 @@ class TrajXyPlot(ResearchPlt):
         self.show_colorbar_speed(
             v_min=colorbar_min, v_max=colorbar_max, v_step=colorbar_step,
             cmap=cmap, label ='speed (km/h)' if self.v_trans else'speed (m/s)')
+
+    def _init_lane_color_map(self, cmap = cm.tab10):
+        '''初始化车道颜色映射。
+        如不需要对车道指定颜色, 可关闭。
+        '''
+        unique_lanes = self.df[self.lane_idx].unique()
+        self.lane_color_map = {lane: cmap(i) for i, lane in enumerate(unique_lanes)}
 
 
 def main_raoyue():
