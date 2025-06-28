@@ -6,8 +6,8 @@ from matplotlib import cm
 from matplotlib import pyplot as plt
 
 
-from utils import combine_images
-from research_plt import ResearchPlt
+from .utils import combine_images           # 考虑到需要被外部代码引用，因此一定需要相对引入, 否则外部引入后这些对应的代码将会从外部代码导入，而非本文件夹所构建
+from .research_plt import ResearchPlt
 
 
 class TimeSpacePlotter(ResearchPlt):
@@ -24,7 +24,7 @@ class TimeSpacePlotter(ResearchPlt):
             lane_idx: Union[int, str],
             dist_idx: Union[int, str],
             v_idx: Union[int, str],
-            save_dir: str = None,
+            output_dir: str = None,
             max_time: int = 1e10,
             ids: Union[list, str, int] = None,
             v_trans: bool = False,
@@ -41,7 +41,7 @@ class TimeSpacePlotter(ResearchPlt):
         lane_idx: Union[int, str], 车道号列索引或列名
         dist_idx: Union[int, str], 车辆位置列索引或列名
         v_idx: Union[int, str], 车辆速度列索引或列名
-        save_dir: str, 保存图片的文件夹
+        output_dir: str, 保存图片的文件夹
         max_time: int, 最大画图的帧数/秒数, 默认值为尽可能大的数字, 即画图范围不限
         ids: Union[int, str, list], 要画图的车辆ID列表, 默认为None, 即所有车辆
         v_trans: bool, 是否转换速度单位, 默认False, 即速度单位为m/s, 设为True则转换为km/h
@@ -50,7 +50,7 @@ class TimeSpacePlotter(ResearchPlt):
         '''
         super().__init__(**kwargs)
         self.path = path
-        self.save_dir = save_dir
+        self.output_dir = output_dir
         self.max_time = max_time
         self.ids = [ids] if isinstance(ids, int) else ids
         self.v_trans = v_trans
@@ -127,19 +127,19 @@ class TimeSpacePlotter(ResearchPlt):
                 x_grid=x_grid, x_grid_color=x_grid_color, x_grid_style=x_grid_style, x_grid_width=x_grid_width,
                 y_grid=y_grid, y_grid_color=y_grid_color, y_grid_style=y_grid_style, y_grid_width=y_grid_width,
             )
-            plt.savefig(os.path.join(self.save_dir, f"lane_{lane}.jpg"))
+            plt.savefig(os.path.join(self.output_dir, f"lane_{lane}.jpg"))
             plt.close()
         if combine:
-            combine_images(self.save_dir)
+            combine_images(self.output_dir)
         print("finish drawing!")
 
 
 def main_example():
     '''样例数据画图'''
     path = 'data/tra_sample.xlsx'
-    save_dir = path.removesuffix('.xlsx')
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+    output_dir = path.removesuffix('.xlsx')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     # 数据表列索引
     lane_idx = 1
     car_idx = 0
@@ -148,7 +148,7 @@ def main_example():
     v_idx = 6
     # 运行
     tsp = TimeSpacePlotter(
-        path=path, save_dir=save_dir,
+        path=path, output_dir=output_dir,
         lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx,
         dist_idx=dist_idx, v_idx=v_idx,
         v_trans=True, markersize=1,
@@ -157,13 +157,19 @@ def main_example():
     tsp.run()
 
 
-def main_sumo_model0():
-    '''sumo仿真model0数据画图'''
-    path = r'D:\myscripts\pro\output\model0\trajectory.csv'
+def main_sumo_model0(output_dir: str):
+    '''sumo仿真model0数据画图
+    
+    input
+    -----
+    output_dir: str, 仿真数据文件夹路径
+    '''
+    # path = r'D:\myscripts\pro\output\model0\trajectory.csv'
+    path = os.path.join(output_dir, 'trajectory.csv')
     # 创建输出文件夹
-    save_dir = os.path.join(os.path.dirname(path), 'trajectory')
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+    output_dir = output_dir or os.path.join(os.path.dirname(path), 'trajectory')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     # 数据表列索引
     lane_idx = 'laneID'
     car_idx = 'vehicleID'
@@ -173,7 +179,7 @@ def main_sumo_model0():
     v_idx = 'speed(m/s)'
     # 运行
     tsp = TimeSpacePlotter(
-        path=path, save_dir=save_dir,
+        path=path, output_dir=output_dir,
         lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
         v_trans=True, v_abs=True,
         figsize=(20,8),
@@ -186,43 +192,18 @@ def main_sumo_model0():
         )
 
 
-def test_sumo_model0_single_car():
-    '''sumo仿真model0数据画图, 单辆车'''
-    path = r'D:\myscripts\pro\output\model0\trajectory.csv'
-    df = pd.read_csv(path)
-    for car_id in df['vehicleID'].unique():
-        print(car_id)
-        save_dir = os.path.join(os.path.dirname(path), 'trajectory', f'{car_id}')
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        tmp_file_path = os.path.join(save_dir, 'tmp.csv')
-        df[df['vehicleID'] == car_id].to_csv(tmp_file_path, index=False)
-        # 数据表列索引
-        lane_idx = 'laneID'
-        car_idx ='vehicleID'
-        time_idx = 'time(s)'
-        dist_idx= 'x(m)'            # 'distance(m)'
-        v_idx ='speed(m/s)'
-        # 运行
-        tsp = TimeSpacePlotter(
-            path=tmp_file_path, save_dir=save_dir,
-            lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx,
-            dist_idx=dist_idx, v_idx=v_idx, v_trans=True,
-        )
-        tsp.run(
-            x_min=0, x_max=2200,
-            y_min=0, y_max=2500, y_gap=50, y_offset=1000,
-            y_grid=[1000, 1500],
-        )
-
-
-def main_sumo_model1():
-    '''sumo仿真model1数据画图'''
-    path = r'D:\myscripts\pro\output\model1\trajectory.csv'
+def main_sumo_model1(output_dir: str):
+    '''sumo仿真model1数据画图
+    
+    input
+    -----
+    output_dir: str, 仿真数据文件夹路径
+    '''
+    # path = r'D:\myscripts\pro\output\model1\trajectory.csv'
+    path = os.path.join(output_dir, 'trajectory.csv')
     # 创建输出文件夹
-    save_dir = os.path.join(os.path.dirname(path), 'trajectory')
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     # 数据表列索引
     lane_idx = 'laneID'
     car_idx = 'vehicleID'
@@ -232,22 +213,154 @@ def main_sumo_model1():
     v_idx = 'speed(m/s)'
     # 运行
     tsp = TimeSpacePlotter(
-        path=path, save_dir=save_dir,
+        path=path, output_dir=output_dir,
         lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
         v_trans=True, v_abs=True,
-        figsize=(20,8),
+        figsize=(10,8),
         )
     tsp.run(
         markersize=0.5, marker_alpha=1,
         x_min=0, x_max=1400,
-        y_min=0, y_max=1200, y_gap=0,
-        y_offset=500,
-        y_grid=[500, 700],
+        y_min=0, y_max=1700, y_gap=0,       # y_max=1700
+        y_offset=1000,
+        y_grid=[300, 1000, 1200],
+        cmap=cm.jet_r,
         )
+
+def main_sumo_model2(output_dir: str):
+    '''sumo仿真model2数据画图
+
+    input
+    -----
+    output_dir: str, 仿真数据文件夹路径
+    '''
+    # path = r'D:\myscripts\pro\output\model2\trajectory.csv'
+    path = os.path.join(output_dir, 'trajectory.csv')
+    # 创建输出文件夹
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # 数据表列索引
+    lane_idx = 'laneID'
+    car_idx = 'vehicleID'
+    time_idx = 'time(s)'
+    # dist_idx = 'odeometer(m)'
+    dist_idx= 'x(m)'
+    v_idx = 'speed(m/s)'
+    # 运行
+    tsp = TimeSpacePlotter(
+        path=path, output_dir=output_dir,
+        lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
+        v_trans=True, v_abs=True,
+        figsize=(10,8),
+        )
+    tsp.run(
+        markersize=0.5, marker_alpha=1,
+        x_min=0, x_max=1400,
+        y_min=0, y_max=1700, y_gap=0,
+        y_offset=1000,
+        y_grid=[300, 800, 1000, 1200],
+        cmap=cm.jet_r,
+        )
+
+
+def main_sumo_single_car(output_dir: str):
+    '''sumo仿真数据画图, 单车模型
+
+    input
+    -----
+    output_dir: str, 仿真数据文件夹路径
+    '''
+    # path = r'D:\myscripts\pro\output\single_car\trajectory.csv'
+    path = os.path.join(output_dir, 'trajectory.csv')
+    # 创建输出文件夹
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # 数据表列索引
+    lane_idx = 'laneID'
+    car_idx = 'vehicleID'
+    time_idx = 'time(s)'
+    # dist_idx = 'odeometer(m)'
+    dist_idx= 'x(m)'
+    v_idx = 'speed(m/s)'
+    # 运行
+    tsp = TimeSpacePlotter(
+        path=path, output_dir=output_dir,
+        lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
+        v_trans=True, v_abs=True,
+        figsize=(10,8),
+        )
+    tsp.run(
+        combine=False,
+        markersize=0.5, marker_alpha=1,
+        x_min=0, x_max=80,
+        y_min=0, y_max=600,
+        y_grid=[200, 400],
+        # cmap=cm.jet_r,
+        )
+
+
+def main_sumo_model3(output_dir: str):
+    '''sumo仿真model3数据画图
+    
+    input
+    -----
+    output_dir: str, 仿真数据文件夹路径
+    '''
+    # path = r'D:\myscripts\pro\output\model1\trajectory.csv'
+    path = os.path.join(output_dir, 'trajectory.csv')
+    # 创建输出文件夹
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # 数据表列索引
+    lane_idx = 'laneID'
+    car_idx = 'vehicleID'
+    time_idx = 'time(s)'
+    # dist_idx = 'odeometer(m)'
+    dist_idx= 'x(m)'
+    v_idx = 'speed(m/s)'
+    # 运行
+    tsp = TimeSpacePlotter(
+        path=path, output_dir=output_dir,
+        lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
+        v_trans=True, v_abs=True,
+        figsize=(10,8),
+        )
+    tsp.run(
+        markersize=0.5, marker_alpha=1,
+        x_min=0, x_max=1400,
+        y_min=0, y_max=2000, y_gap=0,
+        y_offset=300,
+        y_grid=[300, 800, 1300, 1500],
+        cmap=cm.jet_r,
+        )
+
+
+def time_space_plot_by_sumo_model(model: str, output_dir: str):
+    '''根据传入的model名称, 调用不同函数(针对各个模型设置了不同参数)进行画图
+
+    input
+    -----
+    model: str, 模型名称, 可选model0, model1, model2,...
+    '''
+    func_map = {
+        'model0': main_sumo_model0,
+        'model1': main_sumo_model1,
+        'model2': main_sumo_model2,
+        'model3': main_sumo_model3,
+        'single_car': main_sumo_single_car,
+    }
+    if model not in func_map:
+        raise ValueError(f"model {model} not in {func_map.keys()}")
+    func_map[model](output_dir)
 
 
 if __name__ == '__main__':
     # main_example()
     # main_sumo_model0()
-    main_sumo_model1()
+    output_dir = r'D:\myscripts\pro\output\model1_20250604-134851-下游1km'
+    output_dir = r'D:\myscripts\pro\output\model1_20250604-140443-下游2km'
+    output_dir = r'D:\myscripts\pro\output\model1_20250604-220051-下游3km'
+    main_sumo_model1(output_dir)
+    # main_sumo_model2()
+    # main_sumo_single_car()
     # test_sumo_model0_single_car()
