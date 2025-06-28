@@ -110,7 +110,7 @@ class ResearchPlt:
         绘制车辆速度的colorbar
         '''
         plt.clim(v_min, v_max)
-        cbar = plt.colorbar(cmap=cmap)
+        cbar = plt.colorbar(cmap=cmap, shrink=1, aspect=30)
         cbar.set_ticks(range(v_min, v_max + v_step, v_step))
         if label is not None:
             cbar.set_label(label)
