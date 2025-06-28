@@ -5,7 +5,7 @@ from tqdm import tqdm
 from matplotlib import cm
 from matplotlib import pyplot as plt
 
-from research_plt import ResearchPlt
+from .research_plt import ResearchPlt
 
 
 class TimeSpeedPlotter(ResearchPlt):

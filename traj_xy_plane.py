@@ -5,7 +5,7 @@ from tqdm import tqdm
 from matplotlib import cm
 import matplotlib.pyplot as plt
 
-from research_plt import ResearchPlt
+from .research_plt import ResearchPlt
 
 
 class TrajXyPlot(ResearchPlt):
@@ -66,7 +66,7 @@ class TrajXyPlot(ResearchPlt):
         # 创建输出文件夹
         self.save_dir = save_dir or path.split('.')[0] + f'_traj_xy_{legend_mode}'
         if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
+            os.makedirs(self.save_dir, exist_ok=True)
         # 读取数据
         self.df = pd.read_csv(path) if path.endswith('.csv') else pd.read_excel(path)
         self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
@@ -322,9 +322,8 @@ def main_raoyue():
     txyp.run()
 
 
-def main_model0():
+def main_sumo(csv_path: str):
     '''运行sumo仿真的model0轨迹数据'''
-    path = r'D:\myscripts\pro\output\model0\trajectory.csv'
     lane_idx = 'laneID'
     car_idx = 'vehicleID'
     time_idx = 'time(s)'
@@ -332,7 +331,7 @@ def main_model0():
     y_idx = 'y(m)'
     v_idx = 'speed(m/s)'
     txyp = TrajXyPlot(
-        path=path,
+        path=csv_path,
         x_idx=x_idx, y_idx=y_idx, lane_idx=lane_idx,
         car_idx=car_idx, time_idx=time_idx, v_idx=v_idx,
         v_trans=True,
@@ -342,4 +341,4 @@ def main_model0():
 
 if __name__ == '__main__':
     # main_raoyue()
-    main_model0()
+    main_sumo()
