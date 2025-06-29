@@ -6,22 +6,22 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib import cm
-import seaborn as sns
 
-from research_plt import ResearchPlt
+from .research_plt import ResearchPlt
 from scipy.stats import gaussian_kde
 
 
 class LaneChangePlot(ResearchPlt):
     '''画出车道变化情况, 适配字符串laneID和整数ID'''
     def __init__(self,
-                 data_path: str,
                  time_idx: Union[int, str],
                  car_idx: Union[int, str],
                  lane_idx: Union[int, str],
                  dist_idx: Union[int, str],
                  x_idx: Union[int, str],
                  y_idx: Union[int, str],
+                 data_path: str = None,
+                 df: pd.DataFrame = None,
                  save_dir: str = None,
                  max_time: int = 1e10,
                  ids: Union[int, str, list] = None,
@@ -38,10 +38,16 @@ class LaneChangePlot(ResearchPlt):
         dist_idx: Union[int, str], 行驶距离索引
         x_idx: Union[int, str], 二维坐标系下x坐标索引
         y_idx: Union[int, str], 二维坐标系下y坐标索引
+        data_path: str, 数据路径, 与df必须提供二者之一
+        df: pd.DataFrame, 数据, 与data_path必须提供二者之一
         save_dir: str, 保存路径
         lanemode: str, 可选y, legend
         **kwargs: ResearchPlt的初始化参数, 参见ResearchPlt
         '''
+        if (not data_path and df is None) or (data_path and df is not None):
+            raise ValueError('data_path and df must provide only one In Calling LaneChangePlot')
+        if df is not None and not save_dir:
+            raise ValueError('save_dir must provide when df is provided')
         super().__init__(**kwargs)
         self.path = data_path
         # 生成存储文件夹
@@ -53,7 +59,7 @@ class LaneChangePlot(ResearchPlt):
         self.ids = ids
         self.lanemode = lanemode
         # 读取数据
-        self.df = pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path)
+        self.df = df if df is not None else (pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path))
         self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
         self.car_idx = car_idx if isinstance(car_idx, str) else self.df.columns[car_idx]
         self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
@@ -167,13 +173,14 @@ class LaneChangePlot(ResearchPlt):
 class GlobalLaneChangePlot(ResearchPlt):
     '''全局画图, 所有车辆的轨迹在一张图上'''
     def __init__(self,
-                 data_path: str,
                  time_idx: Union[int, str],
                  car_idx: Union[int, str], 
                  lane_idx: Union[int, str],
                  dist_idx: Union[int, str],
                  x_idx: Union[int, str],
                  y_idx: Union[int, str],
+                 data_path: str = None,
+                 df: pd.DataFrame = None,
                  save_dir: str = None,
                  max_time: int = 1e10,
                  ids: Union[int, str, list] = None,
@@ -194,6 +201,10 @@ class GlobalLaneChangePlot(ResearchPlt):
         ids: Union[int, str, list], 指定车辆ID
         **kwargs: ResearchPlt的初始化参数
         '''
+        if (not data_path and df is None) or (data_path and df is not None):
+            raise ValueError('data_path and df must provide only one In Calling LaneChangePlot')
+        if df is not None and not save_dir:
+            raise ValueError('save_dir must provide when df is provided')
         super().__init__(**kwargs)
         self.path = data_path
         # 生成存储文件夹
@@ -205,7 +216,7 @@ class GlobalLaneChangePlot(ResearchPlt):
         self.ids = ids
 
         # 读取数据
-        self.df = pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path)
+        self.df = df if df is not None else (pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path))
         self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
         self.car_idx = car_idx if isinstance(car_idx, str) else self.df.columns[car_idx]
         self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
