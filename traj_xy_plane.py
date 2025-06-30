@@ -339,6 +339,6 @@ def main_sumo(csv_path: str):
     txyp.run()
 
 
-if __name__ == '__main__':
-    # main_raoyue()
-    main_sumo()
+# if __name__ == '__main__':
+#     # main_raoyue()
+#     main_sumo()

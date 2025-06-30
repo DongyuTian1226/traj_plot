@@ -4,11 +4,12 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+from scipy.stats import gaussian_kde
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
 from .research_plt import ResearchPlt
-from scipy.stats import gaussian_kde
+
 
 
 class LaneChangePlot(ResearchPlt):
@@ -59,7 +60,8 @@ class LaneChangePlot(ResearchPlt):
         self.ids = ids
         self.lanemode = lanemode
         # 读取数据
-        self.df = df if df is not None else (pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path))
+        self.df = df if df is not None else \
+            (pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path))
         self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
         self.car_idx = car_idx if isinstance(car_idx, str) else self.df.columns[car_idx]
         self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
@@ -174,7 +176,7 @@ class GlobalLaneChangePlot(ResearchPlt):
     '''全局画图, 所有车辆的轨迹在一张图上'''
     def __init__(self,
                  time_idx: Union[int, str],
-                 car_idx: Union[int, str], 
+                 car_idx: Union[int, str],
                  lane_idx: Union[int, str],
                  dist_idx: Union[int, str],
                  x_idx: Union[int, str],
@@ -216,7 +218,8 @@ class GlobalLaneChangePlot(ResearchPlt):
         self.ids = ids
 
         # 读取数据
-        self.df = df if df is not None else (pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path))
+        self.df = df if df is not None else \
+            (pd.read_csv(data_path) if data_path.endswith('.csv') else pd.read_excel(data_path))
         self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
         self.car_idx = car_idx if isinstance(car_idx, str) else self.df.columns[car_idx]
         self.time_idx = time_idx if isinstance(time_idx, str) else self.df.columns[time_idx]
@@ -237,7 +240,7 @@ class GlobalLaneChangePlot(ResearchPlt):
             lane_min: int = None, lane_max: int = None,
             x_grid: list = None, x_grid_color: str = 'grey', x_grid_style: str = '--', x_grid_width: float = 0.5,
             y_grid: list = None, y_grid_color: str = 'black', y_grid_style: str = '-', y_grid_width: float = 0.5,
-            plot_type: str = 'heatmap',  # 可选 'heatmap', 'log_heatmap', 'scatter', 'direction_scatter', 'aggregate_direction'
+            plot_type: str = 'heatmap',
             cmap: str = 'YlOrRd',
             x_bins: int = 50,  # x方向的网格数
             lanemode: str = 'y',
@@ -296,19 +299,15 @@ class GlobalLaneChangePlot(ResearchPlt):
         x_edges = np.linspace(x_min or x.min(), x_max or x.max(), x_bins + 1)
 
         if plot_type in ['heatmap', 'log_heatmap']:
-            self._plot_heatmap(x, y, x_edges, y_edges, cmap, 
-                             log_scale=(plot_type == 'log_heatmap'))
+            self._plot_heatmap(x, y, x_edges, y_edges, cmap, log_scale=plot_type == 'log_heatmap')
         elif plot_type == 'scatter':
-            self._plot_density_scatter(x, y, x_bins, scatter_size_range, 
-                                     scatter_alpha_range)
+            self._plot_density_scatter(x, y, scatter_size_range, scatter_alpha_range)
         elif plot_type == 'direction_scatter':
-            self._plot_direction_scatter(x, y, lane_changes_df['direction'], 
-                                       x_bins, scatter_size_range, 
-                                       scatter_alpha_range, arrow_scale)
+            self._plot_direction_scatter(
+                x, y, lane_changes_df['direction'], scatter_size_range, scatter_alpha_range, arrow_scale)
         elif plot_type == 'aggregate_direction':
             self._plot_aggregated_direction_scatter(x, y, lane_changes_df['direction'],
-                                         x_bins, scatter_size_range,
-                                         scatter_alpha_range, arrow_scale)
+                                         x_bins, arrow_scale)
 
         # 设置标签和范围
         plt.xlabel(xlabel)
@@ -330,32 +329,32 @@ class GlobalLaneChangePlot(ResearchPlt):
 
     def _plot_heatmap(self, x, y, x_edges, y_edges, cmap, log_scale=False):
         '''绘制热力图'''
-        H, _, _ = np.histogram2d(x, y, bins=[x_edges, y_edges])
+        h, _, _ = np.histogram2d(x, y, bins=[x_edges, y_edges])
         if log_scale:
-            H = np.log1p(H)  # log1p处理0值
-        plt.pcolormesh(x_edges, y_edges, H.T, cmap=cmap)
+            h = np.log1p(h)  # log1p处理0值
+        plt.pcolormesh(x_edges, y_edges, h.T, cmap=cmap)
         plt.colorbar(label='Lane Change Count (log)' if log_scale else 'Lane Change Count')
 
-    def _plot_density_scatter(self, x, y, bins, size_range, alpha_range):
+    def _plot_density_scatter(self, x, y, size_range, alpha_range):
         '''绘制密度散点图'''
         # 计算每个点的局部密度
         xy = np.vstack([x, y])
         z = gaussian_kde(xy)(xy)
-        
+
         # 归一化密度值到指定范围
         sizes = np.interp(z, (z.min(), z.max()), size_range)
         alphas = np.interp(z, (z.min(), z.max()), alpha_range)
-        
+
         # 绘制散点图
         plt.scatter(x, y, s=sizes, alpha=alphas, c=z, cmap='viridis')
         plt.colorbar(label='Density')
 
-    def _plot_direction_scatter(self, x, y, directions, bins, size_range, alpha_range, arrow_scale):
+    def _plot_direction_scatter(self, x, y, directions, size_range, alpha_range, arrow_scale):
         '''绘制带方向的散点图'''
         # 计算每个点的局部密度
         xy = np.vstack([x, y])
         z = gaussian_kde(xy)(xy)
-        
+
         # 归一化密度值到指定范围
         sizes = np.interp(z, (z.min(), z.max()), size_range)
         alphas = np.interp(z, (z.min(), z.max()), alpha_range)
@@ -364,9 +363,9 @@ class GlobalLaneChangePlot(ResearchPlt):
         # 计算箭头的起点和终点
         dx = np.zeros_like(x)  # x方向无位移
         dy = directions * arrow_scale  # y方向位移与换道方向成正比
-        
+
         # 绘制箭头
-        plt.quiver(x, y, dx, dy, 
+        plt.quiver(x, y, dx, dy,
                   directions,  # 箭头颜色与方向一致
                   cmap='RdYlBu',
                   scale=arrow_scale*20,  # 调整箭头大小
@@ -377,20 +376,20 @@ class GlobalLaneChangePlot(ResearchPlt):
         scatter = plt.scatter(x, y, s=sizes, alpha=alphas, c=directions, cmap='viridis')
         plt.colorbar(scatter, label='Lane Change Direction')
 
-    def _plot_aggregated_direction_scatter(self, x, y, directions, bins, size_range, alpha_range, arrow_scale):
+    def _plot_aggregated_direction_scatter(self, x, y, directions, bins, arrow_scale):
         '''绘制聚合后的方向散点图'''
         # 创建网格
         x_edges = np.linspace(min(x), max(x), bins)
         y_edges = np.linspace(min(y), max(y), bins)
-        
+
         # 初始化聚合数据存储
         grid_counts = np.zeros((bins-1, bins-1))  # 每个网格的换道数量
         grid_directions = np.zeros((bins-1, bins-1))  # 每个网格的平均换道方向
-        
+
         # 计算网格中心点坐标
         x_centers = (x_edges[:-1] + x_edges[1:]) / 2
         y_centers = (y_edges[:-1] + y_edges[1:]) / 2
-        
+
         # 聚合数据
         for i in range(len(x_edges)-1):
             for j in range(len(y_edges)-1):
@@ -401,26 +400,26 @@ class GlobalLaneChangePlot(ResearchPlt):
                 if grid_counts[i,j] > 0:
                     # 计算该网格内的平均换道方向
                     grid_directions[i,j] = np.mean(directions[mask])
-        
+
         # 对换道数量取对数,避免数值差异过大
         log_counts = np.log1p(grid_counts)
-        
+
         # 归一化箭头参数
-        normalized_counts = np.interp(log_counts, 
-                                    (log_counts.min(), log_counts.max()), 
+        normalized_counts = np.interp(log_counts,
+                                    (log_counts.min(), log_counts.max()),
                                     (0.001, 1.0))
-        
+
         # 绘制聚合后的箭头
-        for i in range(len(x_centers)):
-            for j in range(len(y_centers)):
+        for i, _ in enumerate(x_centers):
+            for j, _ in enumerate(y_centers):
                 if grid_counts[i,j] > 0:
                     # 箭头宽度和长度基于对数密度变化
                     width = normalized_counts[i,j] * 0.015  # 增大基础宽度
                     length = normalized_counts[i,j] * arrow_scale
                     alpha = normalized_counts[i,j] * 0.6 + 0.4  # 提高最小透明度
-                    
+
                     # 绘制箭头
-                    plt.quiver(x_centers[i], y_centers[j], 
+                    plt.quiver(x_centers[i], y_centers[j],
                              0,  # x方向无位移
                              grid_directions[i,j] * length,  # y方向位移随密度变化
                              grid_directions[i,j],  # 箭头颜色
@@ -428,9 +427,9 @@ class GlobalLaneChangePlot(ResearchPlt):
                              scale=arrow_scale*10,
                              width=width,
                              alpha=alpha)
-        
+
         # 添加密度热力图背景
-        plt.hist2d(x, y, bins=[x_edges, y_edges], 
+        plt.hist2d(x, y, bins=[x_edges, y_edges],
                   cmap='YlOrRd', alpha=0.3,
                   norm=plt.matplotlib.colors.LogNorm())  # 使用对数归一化
         plt.colorbar(label='Lane Change Density (log scale)')
@@ -459,10 +458,13 @@ def main():
 
     path = r'D:\myscripts\pro\output\model0\trajectory.csv'
     lcp = LaneChangePlot(
-        path,
-        lane_idx=lane_idx, car_idx=car_idx,
-        time_idx=time_idx, dist_idx=dist_idx,
-        x_idx=x_idx, y_idx=y_idx,
+        time_idx=time_idx,
+        car_idx=car_idx,
+        lane_idx=lane_idx,
+        dist_idx=dist_idx,
+        x_idx=x_idx,
+        y_idx=y_idx,
+        data_path=path,
         lanemode='legend',
         figsize=figsize,
         )
@@ -484,7 +486,7 @@ def global_main():
     x_idx = 'x(m)'
     y_idx = 'y(m)'
     gcp = GlobalLaneChangePlot(
-        data_path,
+        data_path=data_path,
         time_idx=time_idx, car_idx=car_idx, dist_idx=dist_idx,
         lane_idx=lane_idx, x_idx=x_idx, y_idx=y_idx,
         )

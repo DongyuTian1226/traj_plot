@@ -357,10 +357,10 @@ def time_space_plot_by_sumo_model(model: str, output_dir: str):
 if __name__ == '__main__':
     # main_example()
     # main_sumo_model0()
-    output_dir = r'D:\myscripts\pro\output\model1_20250604-134851-下游1km'
-    output_dir = r'D:\myscripts\pro\output\model1_20250604-140443-下游2km'
-    output_dir = r'D:\myscripts\pro\output\model1_20250604-220051-下游3km'
-    main_sumo_model1(output_dir)
+    DIR = r'D:\myscripts\pro\output\model1_20250604-134851-下游1km'
+    DIR = r'D:\myscripts\pro\output\model1_20250604-140443-下游2km'
+    DIR = r'D:\myscripts\pro\output\model1_20250604-220051-下游3km'
+    main_sumo_model1(DIR)
     # main_sumo_model2()
     # main_sumo_single_car()
     # test_sumo_model0_single_car()

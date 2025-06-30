@@ -72,7 +72,7 @@ def section_v_hills(
             else:
                 plt.plot(window_centers, values)    # 仅生成一组label
             plt.fill_between(window_centers, values, alpha=0.1)
-        plt.xlim(window_start, window_end)  
+        plt.xlim(window_start, window_end)
     # 统一子图元素
     for i, ax in enumerate(axes):
         ax.set_ylim(0, ymax * 1.1)
@@ -151,7 +151,7 @@ def section_k_hills(
             window_values = window_data.groupby(lane_idx).size() / window_size *1000 # 计算密度, 单位为辆/km
             for lane in lanes:
                 statistics[lane].append(window_values.get(lane, 0))
-            ymax = max(ymax, window_values.max() if not window_values.empty else 0)            
+            ymax = max(ymax, window_values.max() if not window_values.empty else 0)
         # 绘制当前时间的ttc空间分布图
         plt.subplot(time_num, 1, time_k)
         for lane, values in statistics.items():
@@ -188,7 +188,7 @@ def section_k_hills(
 
 
 def plot_ttc(
-    df: pd.DataFrame, output_dir: str, thresholds: list = [1, 2, 3],
+    df: pd.DataFrame, output_dir: str, thresholds: list = (1, 2, 3),
     time_idx: str = 'time(s)', ttc_idx: str = 'ttc(s)', aggregation_num: int = 10,
 ) -> str:
     '''绘制不同ttc阈值的数量情况。
@@ -213,7 +213,11 @@ def plot_ttc(
     ttc_counts = []
     for thres in thresholds:
         # 注意, ttc为负数表示无碰撞风险, 因此不纳入统计次数
-        count = grouped.apply(lambda x: ((x[ttc_idx] > 0) & (x[ttc_idx] <= thres)).sum(), include_groups=False).reset_index(name=f'count_ttc<{thres}s')
+        tmp = thres
+        count = grouped.apply(
+            lambda x: ((x[ttc_idx] > 0) & (x[ttc_idx] <= tmp)).sum(),
+            include_groups=False
+            ).reset_index(name=f'count_ttc<{tmp}s')
         ttc_counts.append(count if not ttc_counts else count.iloc[:, 1])    # 仅保留第一个df表的时间列
     ttc_counts_df = pd.concat(ttc_counts, axis=1)
     # 对ttc_counts重新聚合
@@ -245,7 +249,7 @@ def plot_ttc(
 
 
 def plot_thw(
-    df: pd.DataFrame, output_dir: str, thresholds: list = [1, 2, 3, 4, 5],
+    df: pd.DataFrame, output_dir: str, thresholds: list = (1, 2, 3, 4, 5),
     time_idx: str = 'time(s)', thw_idx: str = 'thw(s)', aggregation_num: int = 10,
 ) -> str:
     '''绘制不同thw阈值的数量情况。
@@ -268,7 +272,10 @@ def plot_thw(
     # 统计不同阈值下的情况
     thw_counts = []
     for thres in thresholds:
-        count = grouped.apply(lambda x: (x[thw_idx] <= thres).sum(), include_groups=False).reset_index(name=f'count_thw<{thres}s')
+        count = grouped.apply(
+            lambda x: (x[thw_idx] <= thres).sum(),
+            include_groups=False
+            ).reset_index(name=f'count_thw<{thres}s')
         thw_counts.append(count if not thw_counts else count.iloc[:, 1])    # 仅保留第一个df表的时间列
     thw_counts_df = pd.concat(thw_counts, axis=1)
     # 对thw_counts重新聚合
@@ -299,7 +306,7 @@ def plot_thw(
     return save_path
 
 
-def plot_ttt(
+def plot_ttt(       # pylint: disable=too-many-statements
     df: pd.DataFrame, window_size: int, output_dir: str,
     car_idx ='vehicleID', time_idx = 'time(s)',
 ) -> str:
@@ -339,8 +346,10 @@ def plot_ttt(
     for t in range(window_size, end_time + 1):     # 时间步默认为1
         # 计算时间窗口内TTT数据
         window_data = ttt_df[(ttt_df['max'] >= t - window_size) & (ttt_df['max'] < t)]
-        mainline_window_data = ttt_df[(ttt_df['max'] >= t - window_size) & (ttt_df['max'] < t) & (ttt_df['vehicle_type'] == 'mainline')]
-        ramp_window_data = ttt_df[(ttt_df['max'] >= t - window_size) & (ttt_df['max'] < t) & (ttt_df['vehicle_type'] == 'ramp')]
+        mainline_window_data = ttt_df[
+            (ttt_df['max'] >= t - window_size) & (ttt_df['max'] < t) & (ttt_df['vehicle_type'] == 'mainline')]
+        ramp_window_data = ttt_df[
+            (ttt_df['max'] >= t - window_size) & (ttt_df['max'] < t) & (ttt_df['vehicle_type'] == 'ramp')]
         window_avg_all.append(window_data['ttt(s)'].mean() if not window_data.empty else nan)
         window_std_all.append(window_data['ttt(s)'].std() if not window_data.empty else nan)
         window_avg_mainline.append(mainline_window_data['ttt(s)'].mean() if not mainline_window_data.empty else nan)
@@ -385,10 +394,11 @@ def plot_ttt(
     # 所有车辆
     plt.plot(result_df['time(s)'], result_df['window_avg_all'], label='Window Avg All', color='red')
     plt.fill_between(result_df['time(s)'],
-                        result_df['window_avg_all'] - result_df['window_std_all'],
-                        result_df['window_avg_all'] + result_df['window_std_all'],
-                        color='red', alpha=0.1)
-    plt.plot(result_df['time(s)'], result_df['cumulative_avg_all'], label='Cumulative Avg All', color='red', linestyle='--')
+                     result_df['window_avg_all'] - result_df['window_std_all'],
+                     result_df['window_avg_all'] + result_df['window_std_all'],
+                     color='red', alpha=0.1)
+    plt.plot(result_df['time(s)'], result_df['cumulative_avg_all'],
+             label='Cumulative Avg All', color='red', linestyle='--')
 
     plt.fill_between(result_df['time(s)'],
                         result_df['cumulative_avg_all'] - result_df['cumulative_std_all'],
@@ -397,10 +407,11 @@ def plot_ttt(
     # 主线车辆
     plt.plot(result_df['time(s)'], result_df['window_avg_mainline'], label='Window Avg Mainline', color='blue')
     plt.fill_between(result_df['time(s)'],
-                        result_df['window_avg_mainline'] - result_df['window_std_mainline'],
-                        result_df['window_avg_mainline'] + result_df['window_std_mainline'],
-                        color='blue', alpha=0.1)
-    plt.plot(result_df['time(s)'], result_df['cumulative_avg_mainline'], label='Cumulative Avg Mainline', color='darkblue', linestyle='--')
+                     result_df['window_avg_mainline'] - result_df['window_std_mainline'],
+                     result_df['window_avg_mainline'] + result_df['window_std_mainline'],
+                     color='blue', alpha=0.1)
+    plt.plot(result_df['time(s)'], result_df['cumulative_avg_mainline'],
+             label='Cumulative Avg Mainline', color='darkblue', linestyle='--')
     plt.fill_between(result_df['time(s)'],
                         result_df['cumulative_avg_mainline'] - result_df['cumulative_std_mainline'],
                         result_df['cumulative_avg_mainline'] + result_df['cumulative_std_mainline'],
@@ -411,19 +422,18 @@ def plot_ttt(
                         result_df['window_avg_ramp'] - result_df['window_std_ramp'],
                         result_df['window_avg_ramp'] + result_df['window_std_ramp'],
                         color='orange', alpha=0.1)
-    plt.plot(result_df['time(s)'], result_df['cumulative_avg_ramp'], label='Cumulative Avg Ramp', color='darkorange', linestyle='--')
+    plt.plot(result_df['time(s)'], result_df['cumulative_avg_ramp'],
+             label='Cumulative Avg Ramp', color='darkorange', linestyle='--')
     plt.fill_between(result_df['time(s)'],
-                        result_df['cumulative_avg_ramp'] - result_df['cumulative_std_ramp'],
-                        result_df['cumulative_avg_ramp'] + result_df['cumulative_std_ramp'],
-                        color='darkorange', alpha=0.1)
+                     result_df['cumulative_avg_ramp'] - result_df['cumulative_std_ramp'],
+                     result_df['cumulative_avg_ramp'] + result_df['cumulative_std_ramp'],
+                     color='darkorange', alpha=0.1)
     # 设置标题和标签
     plt.title('Total Travel Time (TTT) Analysis')
     plt.xlabel('Time (s)')
     plt.ylabel('Total Travel Time (s)')
     plt.xlim(0, end_time)
     plt.ylim(0, None)
-    plt.legend()
-    # 添加图例
     plt.legend()
     # 添加网格
     plt.grid(True)
@@ -439,6 +449,6 @@ def plot_ttt(
 
 
 if __name__ == '__main__':
-    path = r'D:\myscripts\pro\output\model3_20250627-140409\trajectory.csv'
-    df = pd.read_csv(path)
-    plot_ttt(df, window_size=30, output_dir=os.path.dirname(path))
+    PATH = r'D:\myscripts\pro\output\model3_20250627-140409\trajectory.csv'
+    data = pd.read_csv(PATH)
+    plot_ttt(data, window_size=30, output_dir=os.path.dirname(PATH))

@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from tqdm import tqdm
 
-from research_plt import ResearchPlt
+from .research_plt import ResearchPlt
 
 
-class ExamplePlotter(ResearchPlt):
+class ExamplePlotter(ResearchPlt):      # pylint: disable=too-few-public-methods
     '''示例, 基于ResearchPlt类进行继承。
     该class作为新class的代码模板, 使用请检查每一个NOTE提示。
 
