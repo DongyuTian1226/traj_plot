@@ -29,6 +29,8 @@ class TimeSpacePlotter(ResearchPlt):
             ids: Union[list, str, int] = None,
             v_trans: bool = False,
             v_abs: bool = False,
+            open_click: bool = True,
+
             **kwargs,
             ):
         '''读取并预处理数据
@@ -46,6 +48,7 @@ class TimeSpacePlotter(ResearchPlt):
         ids: Union[int, str, list], 要画图的车辆ID列表, 默认为None, 即所有车辆
         v_trans: bool, 是否转换速度单位, 默认False, 即速度单位为m/s, 设为True则转换为km/h
         v_abs: bool, 是否取速度绝对值, 默认False
+        open_click: 支持点击显示点信息
         **kwargs: ResearchPlt的初始化参数, 参见ResearchPlt
         '''
         super().__init__(**kwargs)
@@ -55,6 +58,8 @@ class TimeSpacePlotter(ResearchPlt):
         self.ids = [ids] if isinstance(ids, int) else ids
         self.v_trans = v_trans
         self.v_abs = v_abs
+        self.open_click = open_click
+
         # 读取数据
         self.df = pd.read_csv(path) if path.endswith('.csv') else pd.read_excel(path)
         self.lane_idx = lane_idx if isinstance(lane_idx, str) else self.df.columns[lane_idx]
@@ -108,14 +113,23 @@ class TimeSpacePlotter(ResearchPlt):
         print("begin drawing!")
         handle = tqdm(self.df.groupby(self.lane_idx))
         for lane, lane_data in handle:
+            # one figure for each lane
             handle.set_description(f"lane {lane}")
-            plt.figure()
-            for _, car_traj in lane_data.groupby(lane_data[self.car_idx]):
+            # plt.figure()
+            fig, ax = plt.subplots()
+            scatter_objs = []
+            vehicle_ids = []
+            for car_id, car_traj in lane_data.groupby(lane_data[self.car_idx]):
                 car_traj[self.v_idx] = car_traj[self.v_idx]
                 speeds = car_traj[self.v_idx].values
-                plt.scatter(car_traj[self.time_idx], car_traj[self.dist_idx],
+                sc = plt.scatter(car_traj[self.time_idx], car_traj[self.dist_idx],
                             c=speeds, cmap=cmap, norm=norm_func,
                             marker=marker, s=markersize, alpha=marker_alpha)
+                scatter_objs.append(sc)
+                vehicle_ids.append(car_id)
+            if self.open_click:
+                self.setup_click_handler(fig, ax, scatter_objs, vehicle_ids)
+
             plt.title(f"lane {lane} trajectories")
             self.show_colorbar_speed(
                 cmap=cmap, v_min=colorbar_min, v_max=colorbar_max, v_step=colorbar_step)
@@ -127,7 +141,10 @@ class TimeSpacePlotter(ResearchPlt):
                 x_grid=x_grid, x_grid_color=x_grid_color, x_grid_style=x_grid_style, x_grid_width=x_grid_width,
                 y_grid=y_grid, y_grid_color=y_grid_color, y_grid_style=y_grid_style, y_grid_width=y_grid_width,
             )
+            plt.grid()
             plt.savefig(os.path.join(self.output_dir, f"lane_{lane}.jpg"))
+            if lane == 1:
+                plt.show()
             plt.close()
         if combine:
             combine_images(self.output_dir)
@@ -323,14 +340,122 @@ def main_sumo_model3(output_dir: str):
         path=path, output_dir=output_dir,
         lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
         v_trans=True, v_abs=True,
-        figsize=(10,8),
+        figsize=(14,8),
         )
     tsp.run(
         markersize=0.5, marker_alpha=1,
-        x_min=0, x_max=1400,
-        y_min=0, y_max=2000, y_gap=0,
-        y_offset=300,
-        y_grid=[300, 800, 1300, 1500],
+        x_min=0, x_max=1400,     # 500
+        y_min=0, y_max=1700, y_gap=0,
+        y_offset=0,     # 300, 现在把预热的300m去掉，不画在图上
+        # y_grid=[300, 800, 1300, 1500],
+        y_grid=[500, 1000, 1200],
+        cmap=cm.jet_r,
+        )
+
+
+def main_sumo_model4(output_dir: str):
+    '''sumo仿真model3数据画图
+    
+    input
+    -----
+    output_dir: str, 仿真数据文件夹路径
+    '''
+    # path = r'D:\myscripts\pro\output\model1\trajectory.csv'
+    path = os.path.join(output_dir, 'trajectory.csv')
+    # 创建输出文件夹
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # 数据表列索引
+    lane_idx = 'laneID'
+    car_idx = 'vehicleID'
+    time_idx = 'time(s)'
+    # dist_idx = 'odeometer(m)'
+    dist_idx= 'x(m)'
+    v_idx = 'speed(m/s)'
+    # 运行
+    tsp = TimeSpacePlotter(
+        path=path, output_dir=output_dir,
+        lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
+        v_trans=True, v_abs=True,
+        figsize=(14,8),
+        )
+    tsp.run(
+        markersize=0.5, marker_alpha=1,
+        x_min=0, x_max=1600,     # 500
+        y_min=0, y_max=3700, y_gap=0,
+        y_offset=0,     # 300, 现在把预热的300m去掉，不画在图上
+        # y_grid=[300, 800, 1300, 1500],
+        y_grid=[1500, 2865, 3000, 3200],
+        cmap=cm.jet_r,
+        )
+
+
+def main_sumo_model5(output_dir: str):
+    '''sumo仿真model5数据画图
+    
+    input
+    -----
+    output_dir: str, 仿真数据文件夹路径
+    '''
+    # path = r'D:\myscripts\pro\output\model1\trajectory.csv'
+    path = os.path.join(output_dir, 'trajectory.csv')
+    # 创建输出文件夹
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # 数据表列索引
+    lane_idx = 'laneID'
+    car_idx = 'vehicleID'
+    time_idx = 'time(s)'
+    # dist_idx = 'odeometer(m)'
+    dist_idx= 'x(m)'
+    v_idx = 'speed(m/s)'
+    # 运行
+    tsp = TimeSpacePlotter(
+        path=path, output_dir=output_dir,
+        lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
+        v_trans=True, v_abs=True,
+        figsize=(14,8),
+        )
+    tsp.run(
+        markersize=0.5, marker_alpha=1,
+        x_min=0, x_max=1200,     # 500
+        y_min=0, y_max=3000, y_gap=0,
+        y_offset=0,     # 300, 现在把预热的300m去掉，不画在图上
+        # y_grid=[300, 800, 1300, 1500],
+        y_grid=[300, 1300, 2165, 2300, 2500, 3000],
+        cmap=cm.jet_r,
+        )
+
+
+def main_default(output_dir: str):
+    '''sumo仿真画图, 未指定模型时的默认调用函数
+
+    input
+    -----
+    output_dir: str, 仿真数据文件夹路径
+    '''
+    # file
+    path = os.path.join(output_dir, 'trajectory.csv')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # data
+    lane_idx = 'laneID'
+    car_idx = 'vehicleID'
+    time_idx = 'time(s)'
+    # dist_idx = 'odeometer(m)'
+    dist_idx= 'x(m)'
+    v_idx = 'speed(m/s)'
+    # plot
+    tsp = TimeSpacePlotter(
+        path=path, output_dir=output_dir,
+        lane_idx=lane_idx, car_idx=car_idx, time_idx=time_idx, dist_idx=dist_idx, v_idx=v_idx,
+        v_trans=True, v_abs=True,
+        # figsize=(16,8),
+        figsize=(16,8),
+        )
+    tsp.run(
+        markersize=0.5, marker_alpha=1,
+        x_min=0, y_min=0,
         cmap=cm.jet_r,
         )
 
@@ -342,15 +467,20 @@ def time_space_plot_by_sumo_model(model: str, output_dir: str):
     -----
     model: str, 模型名称, 可选model0, model1, model2,...
     '''
+    model = model.split('-')[0]     # model3-1, model3-2, model3-3,...
     func_map = {
         'model0': main_sumo_model0,
         'model1': main_sumo_model1,
         'model2': main_sumo_model2,
         'model3': main_sumo_model3,
+        'model4': main_sumo_model4,
+        'model5': main_sumo_model5,
         'single_car': main_sumo_single_car,
     }
     if model not in func_map:
-        raise ValueError(f"model {model} not in {func_map.keys()}")
+        print(f"WARNING: model {model} not in {func_map.keys()}, use default function")
+        main_default(output_dir)
+        return
     func_map[model](output_dir)
 
 
