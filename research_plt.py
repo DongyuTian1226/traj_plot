@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 class ResearchPlt:
     '''
@@ -34,7 +34,7 @@ class ResearchPlt:
         legend_handletextpad: float, legend图例文字间距, 默认为0
         '''
         # 非交互式模式, 绘图速度更快
-        plt.switch_backend(backend)
+        # plt.switch_backend(backend)
         # 画布
         plt.rcParams['figure.figsize'] = figsize        # 画布大小
         plt.rcParams['figure.dpi'] = dpi                # 画布分辨率
@@ -76,10 +76,12 @@ class ResearchPlt:
         y_min, y_max: float, y轴范围
         y_gap: float, y轴范围前后间隔
         '''
-        if x_min is not None and x_max is not None:
-            plt.xlim(x_min - x_gap, x_max + x_gap)
-        if y_min is not None and y_max is not None:
-            plt.ylim(y_min - y_gap, y_max + y_gap)
+        x_min = x_min - x_gap if x_min is not None else None
+        x_max = x_max + x_gap if x_max is not None else None
+        y_min = y_min - y_gap if y_min is not None else None
+        y_max = y_max + y_gap if y_max is not None else None
+        plt.xlim(x_min, x_max)
+        plt.ylim(y_min, y_max)
 
     def xy_grid(
         self,
@@ -128,3 +130,73 @@ class ResearchPlt:
         self.xy_limit_with_gap(x_min, x_max, x_gap, y_min, y_max, y_gap)
         self.xy_grid(x_grid, x_grid_color, x_grid_style, x_grid_width,
                      y_grid, y_grid_color, y_grid_style, y_grid_width)
+
+    @staticmethod
+    def setup_click_handler(fig, ax, scatter_objects, ids, dist_thres: float = 5):
+        """
+        TODO 一些场景可能会存在偏移显示，但不多，调小dist_thres可规避这个问题
+        为散点图设置点击事件处理器（每组散点拥有相同ID）
+        
+        参数:
+            fig: matplotlib的figure对象
+            ax: 绘图的axes对象
+            scatter_objects: 散点对象列表，每个对象对应一组轨迹点
+            ids: ID列表，与散点对象列表一一对应，每个元素是该组散点的ID
+            dist_thres: float, 点击距离阈值
+        """
+        # 用于存储当前显示的标注
+        current_annotation = None
+        
+        def on_click(event):
+            nonlocal current_annotation
+            
+            # 如果点击不在坐标轴区域内，则忽略
+            if event.inaxes != ax:
+                return
+            
+            # 获取点击位置坐标
+            click_x, click_y = event.xdata, event.ydata
+            
+            # 遍历所有散点对象，查找被点击的点
+            for scatter, vehicle_id in zip(scatter_objects, ids):
+                # 获取该散点对象的所有点坐标
+                points = scatter.get_offsets()
+                if len(points) == 0:
+                    continue
+                    
+                # 计算点击位置与每个点的距离
+                distances = np.sqrt((points[:, 0] - click_x)**2 + (points[:, 1] - click_y)** 2)
+                
+                # 找到最近的点
+                min_dist = np.min(distances)
+                
+                # 设置距离阈值，可根据你的数据尺度调整
+                if min_dist < dist_thres:  # 阈值越小，需要点击越精确
+                    # 在控制台打印ID信息
+                    print(f"点击了车辆 ID: {vehicle_id}")
+                    
+                    # 移除之前的标注
+                    if current_annotation:
+                        current_annotation.remove()
+                    
+                    # 找到最近点的坐标用于显示标注
+                    closest_point_idx = np.argmin(distances)
+                    closest_x, closest_y = points[closest_point_idx]
+                    
+                    # 创建新标注
+                    current_annotation = ax.annotate(
+                        f"ID: {vehicle_id}",
+                        (closest_x, closest_y),
+                        xytext=(5, 5),  # 文本相对点的偏移量
+                        textcoords='offset points',
+                        bbox=dict(boxstyle="round,pad=0.3", fc="yellow", alpha=0.8),
+                        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0.1")
+                    )
+                    
+                    # 更新图形
+                    fig.canvas.draw_idle()
+                    break
+        
+        # 连接事件处理函数
+        fig.canvas.mpl_connect('button_press_event', on_click)
+        print("已启用点击交互功能，点击散点可查看车辆ID")
