@@ -2,7 +2,7 @@ import os
 from PIL import Image
 
 
-def combine_images(dir_path: str, output_name: str = 'combined.jpg', direction: str = 'v'):
+def combine_images(dir_path: str, pattern: str = 'lane_', output_name: str = 'combined.jpg', direction: str = 'v'):
     '''将文件夹下的所有图片合并成一张图片
 
     图片的排列顺序为从上到下
@@ -10,12 +10,13 @@ def combine_images(dir_path: str, output_name: str = 'combined.jpg', direction: 
     input
     -----
     dir_path: str, 图片所在文件夹路径
+    pattern: str, 图片文件名的前缀, 默认为lane_
     output_name: str, 输出图片的文件名
     direction: str, 排列方向, 可选v, h. v表示从上到下, h表示从左到右.
     '''
     # 获取文件夹下的所有图片
     images = [os.path.join(dir_path, f) for f in os.listdir(dir_path)
-              if f.endswith('.jpg') and f.startswith('lane') and 'combine' not in f]
+              if f.endswith('.jpg') and f.startswith(pattern) and 'combine' not in f]
     images.sort(key=lambda x: int(x.strip('.').split('.')[0].split('_')[-1]))
     # 读取第一张图片, 获取图片的宽度和高度
     img = Image.open(images[0])
@@ -39,4 +40,10 @@ def combine_images(dir_path: str, output_name: str = 'combined.jpg', direction: 
 
 
 if __name__ == '__main__':
-    combine_images(r'D:\myscripts\pro\output\model0\trajectory', direction='v')
+    root = r'E:\datasets\a微观轨迹数据集\frenet'
+    datasets = ['highD', 'Mitra', 'NGSIM', 'RAOYUE', 'ZEN']
+    for dataset in datasets:
+        csv_names = [x.split('.')[0] for x in os.listdir(os.path.join(root, dataset)) if x.endswith('.csv')]
+        for name in csv_names:
+            print(f'combine {name}')
+            combine_images(os.path.join(root, dataset), pattern=f'ts-{name}', output_name=f'combined_{name}.jpg', direction='v')

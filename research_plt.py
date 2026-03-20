@@ -13,7 +13,7 @@ class ResearchPlt:
             figsize=(12, 8),
             dpi=300,
             bbox_inches='tight',
-            font='Times New Roman',
+            font=['Times New Roman', 'SimSun'],
             font_size=16,
             legend_framealpha=0.25,
             legend_loc='upper right',
@@ -27,7 +27,7 @@ class ResearchPlt:
         figsize: tuple, 画布大小, 默认为(12, 8)
         dpi: int, 画布分辨率, 默认为300
         bbox_inches: str, 保存图像时, 去掉多余空白, 默认为'tight'
-        font: str, 字体, 默认为'Times New Roman'
+        font: str | list, 字体, 默认为'Times New Roman', 'SimSun'
         font_size: int, 字体大小, 默认为16
         legend_framealpha: float, legend透明, 默认为0.25
         legend_loc: str, legend位置, 默认为'upper right'
@@ -40,7 +40,7 @@ class ResearchPlt:
         plt.rcParams['figure.dpi'] = dpi                # 画布分辨率
         plt.rcParams['savefig.bbox'] = bbox_inches      # 保存图像时, 去掉多余空白
         # 字体
-        plt.rcParams['font.sans-serif'] = [font]        # 字体
+        plt.rcParams['font.family'] = font        # 字体
         plt.rcParams['font.size'] = font_size           # 字体大小
         plt.rcParams['axes.unicode_minus'] = False      # 解决负号'-'显示为方块的问题
         # legend
@@ -156,7 +156,7 @@ class ResearchPlt:
             
             # 获取点击位置坐标
             click_x, click_y = event.xdata, event.ydata
-            
+            print(f"点击位置为({click_x}s, {click_y}m)")
             # 遍历所有散点对象，查找被点击的点
             for scatter, vehicle_id in zip(scatter_objects, ids):
                 # 获取该散点对象的所有点坐标
